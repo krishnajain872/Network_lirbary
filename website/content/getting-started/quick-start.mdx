@@ -1,0 +1,60 @@
+---
+title: Quick Start
+description: Get up and running with NetworkLib in minutes.
+---
+
+# Quick Start
+
+NetworkLib is a high-performance C++20 network library designed for scalability and ease of use.
+
+## Prerequisites
+
+- CMake (3.16+)
+- GCC 12+ or Clang 15+
+- Linux environment (Docker recommended for Windows/Mac)
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-org/network-library.git
+cd network-library
+```
+
+### 2. Build the Library
+
+You can build the library as a Shared Object (default) or Static Library.
+
+```bash
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+## Creating Your First Server
+
+Here is a simple example of a TCP Echo Server.
+
+```cpp
+#include "networklib/core/event/reactor.h"
+#include "networklib/protocols/tcp/tcp_handler.h"
+
+int main() {
+    // Initialize Event Loop
+    auto loop = std::make_unique<networklib::core::event::EventLoop>();
+    loop->Init();
+
+    // Create Reactor
+    networklib::core::event::Reactor reactor(std::move(loop));
+
+    // Register Server on Port 8080
+    auto handler = std::make_shared<networklib::protocols::tcp::EchoHandler>();
+    reactor.RegisterServer(8080, handler);
+
+    // Run
+    reactor.Run();
+    return 0;
+}
+```
