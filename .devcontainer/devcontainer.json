@@ -23,7 +23,7 @@
         "--security-opt", "seccomp=unconfined",
         "--network=host"
     ],
-    "forwardPorts": [8080, 50051, 9090],
-    "postCreateCommand": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..",
+    "forwardPorts": [8080, 50051, 9090, 22],
+    "postCreateCommand": "sudo service ssh start && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..",
     "remoteUser": "root"
 }
