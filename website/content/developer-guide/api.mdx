@@ -1,0 +1,42 @@
+---
+title: API Reference
+description: Complete C++ API documentation for NetworkLib.
+---
+
+# API Reference
+
+## Core Classes
+
+### `Reactor`
+
+The main entry point for the server.
+
+```cpp
+class Reactor {
+public:
+    Reactor(std::unique_ptr<EventLoop> loop);
+    utils::Result<void> RegisterServer(int port, HandlerPtr handler);
+    void Run();
+};
+```
+
+### `Connection`
+
+Represents a client connection.
+
+- `Send(std::string data)`: Sends data asynchronously.
+- `Close()`: Closes the connection gracefully.
+- `SetContext(std::any ctx)`: Attaches application state.
+
+## Protocol Interfaces
+
+### `ProtocolHandler`
+
+Abstract base class for implementing custom protocols.
+
+```cpp
+class ProtocolHandler {
+    virtual void OnConnection(Connection::Ptr conn) = 0;
+    virtual void OnMessage(Connection::Ptr conn) = 0;
+};
+```

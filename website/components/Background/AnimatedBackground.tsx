@@ -27,26 +27,43 @@ function Particles({ count = 200 }) {
     particles.forEach((particle, i) => {
       const { position, speed, offset } = particle;
       // Simple floating animation
-      dummy.position.set(
-        position[0],
-        position[1] + Math.sin(state.clock.elapsedTime * speed + offset) * 0.5,
-        position[2]
-      );
+      const y = position[1] + Math.sin(state.clock.elapsedTime * speed + offset) * 0.5;
+
+      dummy.position.set(position[0], y, position[2]);
+
+      // Rotate based on theme
       dummy.rotation.x += speed;
       dummy.rotation.y += speed;
+
+      // Scale pulsing
+      const scale = 1 + Math.sin(state.clock.elapsedTime * 2 + offset) * 0.2;
+      dummy.scale.set(scale, scale, scale);
+
       dummy.updateMatrix();
       mesh.current!.setMatrixAt(i, dummy.matrix);
     });
     mesh.current.instanceMatrix.needsUpdate = true;
   });
 
-  const color = theme === "dark" ? "#4f46e5" : theme === "sunset" ? "#ea580c" : "#0ea5e9";
+  // Theme-aware colors
+  const getColor = () => {
+      switch(theme) {
+          case 'dark': return "#4f46e5"; // Indigo
+          case 'oceanic': return "#0ea5e9"; // Sky
+          case 'sunset': return "#ea580c"; // Orange
+          case 'cyberpunk': return "#ff00ff"; // Magenta
+          case 'high-contrast': return "#ffffff"; // White
+          default: return "#2563eb"; // Blue
+      }
+  };
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
-      <octahedronGeometry args={[0.2, 0]} />
-      <meshStandardMaterial color={color} transparent opacity={0.6} />
-    </instancedMesh>
+    <group>
+        <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
+            <dodecahedronGeometry args={[0.15, 0]} />
+            <meshStandardMaterial color={getColor()} transparent opacity={0.4} roughness={0.2} metalness={0.8} />
+        </instancedMesh>
+    </group>
   );
 }
 

@@ -1,0 +1,25 @@
+---
+title: HTTP Protocol
+description: Using the built-in HTTP/1.1 and HTTP/2 handlers.
+---
+
+# HTTP Protocol Support
+
+NetworkLib provides a robust HTTP server implementation supporting both HTTP/1.1 and HTTP/2 with automatic upgrade.
+
+## Basic Usage
+
+```cpp
+auto handler = std::make_shared<protocols::http::HttpHandler>();
+handler->OnRequest([](const HttpRequest& req, HttpResponse& res) {
+    res.SetStatus(200);
+    res.SetBody("Hello World");
+});
+```
+
+## Features
+
+- **Pipelining**: Handles multiple requests on a single connection.
+- **Keep-Alive**: Configurable timeout.
+- **Compression**: Gzip/Brotli support.
+- **HTTP/2**: Multiplexing and header compression (HPACK).

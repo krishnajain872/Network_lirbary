@@ -1,0 +1,37 @@
+---
+title: System Architecture
+description: High-level overview of the NetworkLib architecture.
+---
+
+# System Architecture
+
+NetworkLib follows a reactive, non-blocking I/O model designed for low latency and high concurrency.
+
+## High-Level Design (HLD)
+
+The architecture consists of three main layers:
+
+1.  **Event Loop Layer**: Handles raw I/O events using `epoll` or `io_uring`.
+2.  **Reactor Layer**: Dispatches events to appropriate handlers.
+3.  **Protocol Layer**: Parses and serializes protocol-specific data (HTTP, gRPC, etc.).
+
+### Event Loop
+
+The `EventLoop` class wraps the underlying OS polling mechanism. It supports:
+- **EPOLL**: For standard Linux compatibility.
+- **IO_URING**: For high-performance zero-copy I/O (Linux 5.19+).
+
+## Low-Level Design (LLD)
+
+### Connection Lifecycle
+
+1.  **Accept**: `Reactor` accepts a new FD.
+2.  **Register**: FD is added to `EventLoop`.
+3.  **Read**: Data is read into `Buffer`.
+4.  **Parse**: `ProtocolHandler` parses the buffer.
+5.  **Process**: Application logic runs.
+6.  **Write**: Response is written to output buffer.
+
+### Buffer Management
+
+We use a `BufferPool` to minimize allocations. Buffers are recycled upon connection closure.
