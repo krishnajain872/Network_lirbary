@@ -1,0 +1,52 @@
+FROM alpine:3.19 as builder
+
+RUN apk add --no-cache \
+    g++ \
+    cmake \
+    make \
+    linux-headers \
+    git \
+    protobuf-dev \
+    grpc-dev \
+    openssl-dev \
+    yaml-cpp-dev \
+    liburing-dev \
+    python3-dev \
+    py3-pybind11-dev
+
+WORKDIR /build
+COPY . .
+
+# Build with optimizations
+RUN mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    make -j$(nproc) && \
+    strip bin/*
+
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    libstdc++ \
+    protobuf \
+    grpc \
+    openssl \
+    yaml-cpp \
+    liburing \
+    python3 \
+    py3-pip
+
+# Install python protobuf for bindings
+RUN python3 -m venv /venv && \
+    . /venv/bin/activate && \
+    pip install protobuf
+
+COPY --from=builder /build/build/bin/* /usr/local/bin/
+COPY --from=builder /build/build/lib/*.so /usr/local/lib/
+# Python module
+COPY --from=builder /build/build/networklib_py*.so /usr/local/lib/python3.12/site-packages/
+
+# Setup user
+RUN adduser -D -u 1000 netlib
+USER netlib
+
+ENTRYPOINT ["/usr/local/bin/generic_server"]

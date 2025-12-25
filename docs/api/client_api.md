@@ -1,38 +1,37 @@
 # Client API Reference
 
-The library provides a unifying Client API for C++ and Python.
+## IClient Interface
 
-## C++ API
-
-### `GrpcClient`
+The `IClient` interface provides a generic way to connect and send messages.
 
 ```cpp
-#include "networklib/protocols/grpc/grpc_client.h"
+#include "networklib/network_lib.h"
 
-auto loop = std::make_shared<EventLoop>();
-GrpcClient client(loop);
+// Create from file
+auto client = NetworkLib::CreateClient("client.yaml");
 
-if (client.Connect("127.0.0.1", 50051)) {
-    client.SendUnary("/service/Method", "payload");
+if (client->Connect()) {
+    // Send generic raw data
+    client->Send("Raw Data");
+
+    // Send StreamEnvelope (requires header)
+    #include "stream_envelope.pb.h"
+    StreamEnvelope env;
+    env.mutable_payload()->set_data("Payload");
+    client->Send(env);
+
+    client->Disconnect();
 }
 ```
 
-## Python API
+## Configuration
 
-```python
-import networklib_py
+`client.yaml`:
 
-loop = networklib_py.EventLoop()
-client = networklib_py.GrpcClient(loop)
-
-client.Connect("127.0.0.1", 50051)
-client.SendUnary("/service/Method", "payload")
-```
-
-## Node.js API
-
-```javascript
-const networklib = require('networklib_binding');
-const client = new networklib.GrpcClient(new networklib.EventLoop());
-client.connect("127.0.0.1", 50051);
+```yaml
+client:
+  mode: "http" # or "tcp", "grpc"
+  connection:
+    host: "127.0.0.1"
+    port: 8080
 ```

@@ -3,6 +3,8 @@
 
 #include <string>
 #include <memory>
+#include <functional>
+#include "networklib/protocols/protocol_handler.h" // For StreamHandler type
 
 namespace networklib {
 namespace protocols {
@@ -28,6 +30,12 @@ public:
      * @param source_port Source port.
      */
     virtual void OnPacket(int fd, const char* data, size_t len, const std::string& source_ip, int source_port) = 0;
+
+    using StreamHandler = protocols::ProtocolHandler::StreamHandler;
+    virtual void SetStreamHandler(StreamHandler handler) { stream_handler_ = handler; }
+
+protected:
+    StreamHandler stream_handler_;
 };
 
 // Simple Echo Handler for testing/default use

@@ -46,6 +46,9 @@ set(CORE_SOURCES
     core/src/memory/buffer.cpp
     core/src/memory/buffer_pool.cpp
     core/src/connection.cpp
+    core/src/server.cpp
+    core/src/client.cpp
+    core/src/network_lib.cpp
     core/src/security/tls_context.cpp
     core/src/protocols/protocol_factory.cpp
     core/src/protocols/tcp/tcp_handler.cpp
@@ -201,6 +204,28 @@ target_link_libraries(test_udp_echo
 )
 
 install(TARGETS test_udp_echo
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Generic Server Example
+add_executable(generic_server
+    examples/generic_server/main.cpp
+)
+target_link_libraries(generic_server
+    networklib
+)
+install(TARGETS generic_server
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Generic Client Example
+add_executable(generic_client
+    examples/generic_client/main.cpp
+)
+target_link_libraries(generic_client
+    networklib
+)
+install(TARGETS generic_client
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
