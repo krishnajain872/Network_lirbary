@@ -4,14 +4,17 @@
       "target_name": "networklib_node",
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
-      "sources": [ "networklib_node.cpp" ],
+      "sources": [ "src/networklib_node.cpp" ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "../../core/include"
+        "../../core/include",
+        "../../build"
       ],
-      "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
+      "defines": [ "NAPI_CPP_EXCEPTIONS" ],
       "libraries": [
-        "-L../../build/core", "-lnetwork-server" 
+        "-L<(module_root_dir)/../../build/lib",
+        "-lnetworklib",
+        "-Wl,-rpath,<(module_root_dir)/../../build/lib"
       ]
     }
   ]

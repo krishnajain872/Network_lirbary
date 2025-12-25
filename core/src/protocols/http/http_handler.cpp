@@ -56,6 +56,11 @@ void HttpHandler::OnMessage(const core::Connection::Ptr& conn) {
     if (!ctx) return;
 
     if (ParseRequest(buf, *ctx)) {
+        if (!CheckRateLimit()) {
+            SendResponse(conn, 429, "Too Many Requests");
+            conn->Shutdown();
+            return;
+        }
         if (stream_handler_) {
             networklib::StreamEnvelope req_env;
             req_env.mutable_header()->set_message_type(ctx->method + " " + ctx->path);

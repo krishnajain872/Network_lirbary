@@ -100,6 +100,10 @@ void WebSocketHandler::OnMessage(const core::Connection::Ptr& conn) {
             buf.Retrieve(consumed);
             
             if (frame.opcode == OpCode::kText || frame.opcode == OpCode::kBinary) {
+                if (!CheckRateLimit()) {
+                    conn->ForceClose(); // Or send Close frame with 1008
+                    return;
+                }
                 if (stream_handler_) {
                     networklib::StreamEnvelope req;
                     req.mutable_header()->set_message_type("websocket");
