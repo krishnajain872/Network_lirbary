@@ -1,5 +1,6 @@
 "use client";
 
+import "./globals.css";
 import { Sidebar } from "@/components/Layout/Sidebar";
 import { Navbar } from "@/components/Layout/Navbar";
 import AnimatedBackground from "@/components/Background/AnimatedBackground";
