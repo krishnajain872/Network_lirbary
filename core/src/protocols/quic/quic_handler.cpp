@@ -1,4 +1,5 @@
 #include "networklib/protocols/quic/quic_handler.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <sstream>
 
@@ -16,7 +17,7 @@ struct QuicStream {
 };
 
 void QuicHandler::OnConnection(const networklib::core::Connection::Ptr& conn) {
-    std::cout << "[QUIC] Handshake simulated. Connection established." << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[QUIC] Handshake simulated. Connection established.");
     // In real QUIC, we'd negotiate keys here
 }
 
@@ -37,7 +38,7 @@ void QuicHandler::OnMessage(const networklib::core::Connection::Ptr& conn) {
     std::string payload = data.substr(9);
     
     if (type == 0x01) { // STREAM frame
-        std::cout << "[QUIC] Stream 0 Data: " << payload << std::endl;
+        logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[QUIC] Stream 0 Data: %s", payload.c_str());
         // Echo back
         std::string response = "QUIC-ACK: " + payload;
         conn->Send(response); 

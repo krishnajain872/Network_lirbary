@@ -91,6 +91,13 @@ namespace networklib {
          * @brief Creates a Client instance from a config file.
          */
         static std::shared_ptr<IClient> CreateClient(const std::string& config_path);
+
+        /**
+         * @brief Initialize the global logger.
+         * @param config_string Semicolon-separated config string (e.g., "appname=MyApp;console=true").
+         * @return true if initialized successfully.
+         */
+        static bool InitializeLogger(const char* config_string);
     };
 
 } // namespace networklib

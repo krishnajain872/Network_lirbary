@@ -2,6 +2,7 @@
 #include "networklib/core/event/epoll_poller.h"
 #include "networklib/core/event/io_uring_poller.h"
 #include "networklib/constants/errors.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <cstring>
 #include <sys/epoll.h>
@@ -76,7 +77,7 @@ void EventLoop::RemoveFd(int fd) {
 
 void EventLoop::Run() {
     if (!poller_) {
-        std::cerr << "EventLoop::Run() called without Init()" << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "EventLoop::Run() called without Init()");
         return;
     }
     running_ = true;

@@ -1,6 +1,7 @@
 #include "networklib/protocols/websocket/websocket_handler.h"
 #include "networklib/protocols/websocket/handshake.h"
 #include "networklib/core/memory/buffer.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -45,7 +46,7 @@ void WebSocketHandler::OnMessage(const core::Connection::Ptr& conn) {
                 std::string response = Handshake::GenerateResponse(res.Value());
                 conn->Send(response);
                 is_upgraded_ = true;
-                std::cout << "WebSocket Upgraded!" << std::endl;
+                logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "WebSocket Upgraded!");
             } else {
                 conn->Send("HTTP/1.1 400 Bad Request\r\n\r\n");
                 conn->ForceClose();
@@ -65,7 +66,7 @@ void WebSocketHandler::OnMessage(const core::Connection::Ptr& conn) {
             
             if (frame.opcode == OpCode::kText) {
                 std::string msg(frame.payload.begin(), frame.payload.end());
-                std::cout << "WS Recv: " << msg << std::endl;
+                logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "WS Recv: %s", msg.c_str());
                 
                 // Echo back (masked=false for server-to-client)
                 // Need a Frame encoder. 

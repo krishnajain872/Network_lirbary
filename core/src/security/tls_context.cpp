@@ -1,5 +1,6 @@
 #include "networklib/security/tls_context.h"
 #include "networklib/constants/errors.h"
+#include "networklib/logger.h"
 #include <iostream>
 
 namespace networklib {
@@ -77,7 +78,7 @@ utils::Result<void> TlsContext::ReloadCertificates(const std::string& cert_path,
         ctx_ = new_ctx;
     }
     
-    std::cout << "[Security] TLS Certificates Reloaded Successfully" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[Security] TLS Certificates Reloaded Successfully");
     return utils::Result<void>::Success();
 }
 

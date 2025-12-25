@@ -5,6 +5,7 @@
 #include "networklib/core/event/event_loop.h"
 #include "networklib/protocols/grpc/service_registry.h"
 #include "networklib/protocols/grpc/grpc_handler.h"
+#include "networklib/logger.h"
 #include "market_data.h"
 #include "order_service.h"
 #include "market_feed.h"
@@ -12,7 +13,8 @@
 using namespace networklib;
 
 int main() {
-    std::cout << "Starting OMS Reference Application..." << std::endl;
+    logging::Logger::Initialize("appname=OMS;console=true;severity=Info");
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Starting OMS Reference Application...");
 
     auto loop = std::make_unique<core::event::EventLoop>();
     loop->Init();
@@ -21,7 +23,7 @@ int main() {
     // 1. Market Data (UDP 9000)
     auto md_handler = std::make_shared<oms::MarketDataHandler>();
     reactor.RegisterUdpServer(9000, md_handler);
-    std::cout << " - Market Data (UDP) on 9000" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Market Data (UDP) on 9000");
 
     // 2. Order Entry (gRPC 50051)
     oms::OrderEntryService orderService;
@@ -31,15 +33,17 @@ int main() {
     );
     auto grpc_handler = std::make_shared<protocols::grpc::GrpcHandler>();
     reactor.RegisterServer(50051, grpc_handler);
-    std::cout << " - Order Entry (gRPC) on 50051" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Order Entry (gRPC) on 50051");
 
     // 3. Market Feed (WebSocket 8080)
     auto ws_handler = std::make_shared<oms::MarketFeedHandler>();
     reactor.RegisterServer(8080, ws_handler);
-    std::cout << " - Market Feed (WebSocket) on 8080" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Market Feed (WebSocket) on 8080");
 
-    std::cout << "OMS Running. Press Ctrl+C to stop." << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "OMS Running. Press Ctrl+C to stop.");
     reactor.Run();
+
+    logging::Logger::Deinitialize();
 
     return 0;
 }
