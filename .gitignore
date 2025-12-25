@@ -7,3 +7,11 @@ node_modules/
 .next/
 dist/
 target/
+build_debug/
+build_release/
+build_asan/
+build_unity/
+build_debug/
+build_release/
+build_asan/
+build_unity/

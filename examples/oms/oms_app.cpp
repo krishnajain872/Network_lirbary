@@ -1,5 +1,7 @@
+#include "networklib/network_lib.h"
+#include "networklib/config/config.h" // For manual config
+#include "stream_envelope.pb.h"
 #include <iostream>
-#include <thread>
 #include <vector>
 #include "networklib/core/event/reactor.h"
 #include "networklib/core/event/event_loop.h"
@@ -11,6 +13,32 @@
 #include "market_feed.h"
 
 using namespace networklib;
+
+// Market Feed Logic
+class MarketFeed {
+public:
+    void HandleSubscription(const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
+        std::cout << "[Feed] New subscriber" << std::endl;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            subscribers_.push_back(ctx);
+        }
+        resp.mutable_payload()->set_data("Subscribed to Market Feed");
+    }
+
+    void Broadcast(const std::string& msg) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        StreamEnvelope env;
+        env.mutable_payload()->set_data(msg);
+        for (auto& ctx : subscribers_) {
+            ctx->Write(env);
+        }
+    }
+
+private:
+    std::mutex mutex_;
+    std::vector<std::shared_ptr<IStreamContext>> subscribers_;
+};
 
 int main() {
     logging::Logger::Initialize("appname=OMS;console=true;severity=Info");

@@ -11,9 +11,8 @@ namespace core {
 
 Client::Client(const config::ClientConfig& config) : config_(config) {
     loop_ = std::make_unique<event::EventLoop>();
-    loop_->Init(); // Should check result
+    loop_->Init();
 
-    // Create socket
     int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
     connection_ = std::make_shared<Connection>(loop_.get(), fd);
 }
@@ -23,18 +22,21 @@ Client::~Client() {
 }
 
 bool Client::Connect() {
-    // Start loop thread
     loop_thread_ = std::thread([this]() {
         loop_->Run();
     });
 
-    // Reset promise
     connect_promise_ = std::promise<bool>();
     auto future = connect_promise_.get_future();
 
-    // Connect is async in Connection, but we want to block or wait?
-    // Connection::Connect sets state.
-    // We need to register to loop.
+    // Initialize Protocol Strategy
+    protocol_ = client::ClientProtocolFactory::Create(config_.mode);
+    protocol_->OnConnect(connection_);
+
+    // Wire up Message Callback
+    connection_->SetMessageCallback([this](const Connection::Ptr& conn) {
+        if (protocol_) protocol_->OnDataReceived(conn, message_handler_);
+    });
 
     auto res = connection_->Connect(config_.network.host, config_.network.port);
     if (!res) return false;
@@ -42,11 +44,8 @@ bool Client::Connect() {
     loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
         if (events & EPOLLIN) connection_->HandleRead();
         if (events & EPOLLOUT) connection_->HandleWrite();
-        // Check connection state?
-        // Simple client doesn't fully handle async connect callback in this snippet.
     });
 
-    // Naive wait
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     return true;
 }
@@ -57,35 +56,24 @@ void Client::Disconnect() {
     if (loop_thread_.joinable()) loop_thread_.join();
 }
 
+void Client::RegisterMessageHandler(MessageHandler handler) {
+    message_handler_ = handler;
+}
+
 bool Client::Send(const std::string& data) {
+    // Raw send bypassing protocol (or protocol uses it)
     if (!connection_ || !connection_->IsConnected()) return false;
     connection_->Send(data);
     return true;
 }
 
 bool Client::Send(const StreamEnvelope& envelope) {
-    if (config_.mode == "http") {
-        // Convert to HTTP POST
-        std::string body;
-        if (envelope.has_payload()) body = envelope.payload().data();
-
-        std::string path = "/";
-        if (envelope.has_header() && !envelope.header().message_type().empty()) {
-            // Parse "GET /path" or just use message_type as path
-            path = envelope.header().message_type();
-        }
-
-        std::string req = "POST " + path + " HTTP/1.1\r\n";
-        req += "Host: " + config_.network.host + "\r\n";
-        req += "Content-Length: " + std::to_string(body.size()) + "\r\n";
-        req += "\r\n";
-        req += body;
-
-        return Send(req);
-    } else {
-        // TCP / Default: Send serialized proto
-        return Send(envelope.SerializeAsString());
+    if (!connection_ || !connection_->IsConnected()) return false;
+    if (protocol_) {
+        protocol_->Send(connection_, envelope);
+        return true;
     }
+    return false;
 }
 
 } // namespace core
