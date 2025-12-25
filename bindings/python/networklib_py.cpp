@@ -16,16 +16,17 @@ PYBIND11_MODULE(networklib_py, m) {
         .def("stop", &IServer::Stop)
         .def("wait", &IServer::Wait)
         .def("register_stream_handler", [](IServer& self, py::function callback) {
-            self.RegisterStreamHandler([callback](const StreamEnvelope& req, StreamEnvelope& resp) {
+            self.RegisterStreamHandler([callback](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
                 // Acquire GIL for Python call
                 py::gil_scoped_acquire gil;
-                // printf("GIL acquired\n");
 
                 // Serialize Request
                 std::string req_str = req.SerializeAsString();
                 py::bytes req_bytes(req_str);
 
                 // Call Python: resp_bytes = callback(req_bytes)
+                // TODO: Pass context to Python!
+                // For now, simplify: python callback returns response bytes.
                 try {
                     py::object result = callback(req_bytes);
 

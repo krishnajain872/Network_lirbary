@@ -109,6 +109,7 @@ void Connection::HandleRead() {
         ssize_t n = Read(extrabuf, sizeof(extrabuf));
         if (n > 0) {
             input_buffer_.Append(extrabuf, n);
+            if (message_callback_) message_callback_(shared_from_this());
         } else if (n == 0) {
             HandleClose();
             break;
