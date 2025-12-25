@@ -1,5 +1,6 @@
 #include "networklib/network_lib.h"
 #include "networklib/config/config.h"
+#include "networklib/logger.h"
 #include "stream_envelope.pb.h"
 #include <iostream>
 #include <thread>
@@ -8,10 +9,12 @@
 using namespace networklib;
 
 int main(int argc, char** argv) {
+    NetworkLib::InitializeLogger("appname=GenericClient;console=true;severity=Info");
+
     std::string mode = "http";
     if (argc > 1) mode = argv[1];
 
-    std::cout << "Creating Client in " << mode << " mode..." << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Creating Client in %s mode...", mode.c_str());
 
     // Create Config manually
     // In real world, use CreateClient(path)
@@ -37,21 +40,22 @@ int main(int argc, char** argv) {
     auto client = NetworkLib::CreateClient("client_temp.yaml");
 
     if (client->Connect()) {
-        std::cout << "Connected!" << std::endl;
+        logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Connected!");
 
         StreamEnvelope req;
         req.mutable_header()->set_message_type("/hello"); // For HTTP: "POST /hello"
         req.mutable_payload()->set_data("Message from Client");
 
         client->Send(req);
-        std::cout << "Sent message." << std::endl;
+        logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Sent message.");
 
         // Wait a bit
         std::this_thread::sleep_for(std::chrono::seconds(1));
         client->Disconnect();
     } else {
-        std::cerr << "Failed to connect." << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Failed to connect.");
     }
 
+    logging::Logger::Deinitialize();
     return 0;
 }

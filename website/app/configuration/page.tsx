@@ -1,92 +1,76 @@
-import { PageTransition } from "@/components/PageTransition";
-import { Card, CardContent } from "@/components/ui/card";
 import { CodeBlock } from "@/components/CodeBlock";
 
 export default function Configuration() {
   return (
-    <PageTransition>
-      <div className="space-y-8 max-w-4xl">
+    <div className="p-10 space-y-10 max-w-5xl mx-auto">
+      <div>
         <h1 className="text-4xl font-bold mb-4">Configuration Guide</h1>
-        <p className="text-xl text-muted-foreground">
-           Control every aspect of the server via YAML. No code changes required.
+        <p className="text-xl text-slate-400">
+          All behavior is controlled by external configuration files. NetworkLib supports hot-reloading and environment-specific overrides.
         </p>
+      </div>
 
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">Server Config</h2>
-           <p className="text-muted-foreground">
-              The root configuration block `server` defines the environment and basic identity.
-           </p>
-           <CodeBlock
-              language="yaml"
-              filename="config.yaml"
-              code={`server:
-  mode: "tcp"           # tcp, udp, http, grpc, websocket
-  environment: "prod"   # dev, prod
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold text-white border-b border-slate-800 pb-2">Server Configuration</h2>
+        <CodeBlock
+          lang="yaml"
+          code={`server:
+  mode: "grpc"  # http, grpc, rpc, websocket, tcp, udp, mixed
+
   network:
     host: "0.0.0.0"
-    port: 8080
-    socket:
-      so_reuseaddr: true
-      tcp_nodelay: true`}
-           />
-        </section>
+    port: 50051
+    protocol: "tcp"
 
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">Performance Tuning</h2>
-           <p className="text-muted-foreground">
-              Critical settings for optimizing throughput and latency.
-           </p>
-           <CodeBlock
-              language="yaml"
-              filename="config.yaml"
-              code={`server:
-  performance:
-    io_threads: "auto"    # or number, e.g., 8
-    event_loop_type: "io_uring" # io_uring (Linux 5.1+) or epoll
-    enable_zero_copy: true
-    memory:
-      enable_huge_pages: true
-      connection_pool_size: 50000`}
-           />
-           <Card>
-              <CardContent className="pt-6 text-sm text-muted-foreground">
-                 <strong>Note:</strong> `io_uring` requires `memlock` limits to be increased on the host system.
-              </CardContent>
-           </Card>
-        </section>
-
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">Protocol Specifics</h2>
-
-           <h3 className="text-lg font-medium">HTTP/1.1 & HTTP/2</h3>
-           <CodeBlock
-              language="yaml"
-              filename="config.yaml"
-              code={`server:
-  protocols:
-    http:
-      enabled: true
-      version: "1.1"
-      keepalive_timeout_ms: 60000`}
-           />
-
-           <h3 className="text-lg font-medium mt-4">gRPC</h3>
-           <CodeBlock
-              language="yaml"
-              filename="config.yaml"
-              code={`server:
   protocols:
     grpc:
       enabled: true
-      streaming:
-        bidirectional: true
-        max_concurrent_streams: 1000
-      compression:
-        enabled: true
-        default_algorithm: "gzip"`}
-           />
-        </section>
-      </div>
-    </PageTransition>
+      max_concurrent_streams: 1000
+      initial_window_size: 65535
+      compression: ["gzip", "deflate"]
+
+  ssl:
+    enabled: true
+    cert_file: "/certs/server.crt"
+    key_file: "/certs/server.key"
+    min_tls_version: "1.3"
+
+  performance:
+    max_connections: 10000000000  # 10 billion
+    io_threads: "auto"
+    use_io_uring: true
+    enable_zero_copy: true`}
+          filename="config/examples/grpc_server.yaml"
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold text-white border-b border-slate-800 pb-2">Client Configuration</h2>
+        <CodeBlock
+          lang="yaml"
+          code={`client:
+  mode: "grpc"
+
+  connection:
+    target: "server:50051"
+    protocol: "tcp"
+
+  resilience:
+    retry:
+      enabled: true
+      max_attempts: 3
+      backoff_multiplier: 2.0
+    timeout:
+      request_ms: 30000
+
+  load_balancing:
+    strategy: "round_robin"
+    health_check:
+      enabled: true
+      interval_ms: 10000`}
+          filename="config/examples/grpc_client.yaml"
+        />
+      </section>
+    </div>
   );
 }

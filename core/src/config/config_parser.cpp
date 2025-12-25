@@ -208,6 +208,12 @@ ClientConfig ConfigParser::ParseClient(const std::string& filepath) {
                 if (c["connection"]["host"]) config.network.host = c["connection"]["host"].as<std::string>();
                 if (c["connection"]["port"]) config.network.port = c["connection"]["port"].as<int>();
             }
+            if (c["ssl"]) {
+                config.ssl.enabled = GetSafe<bool>(c["ssl"], "enabled", false);
+                config.ssl.cert_file = GetSafe<std::string>(c["ssl"], "cert_file", "");
+                config.ssl.key_file = GetSafe<std::string>(c["ssl"], "key_file", "");
+                config.ssl.ca_file = GetSafe<std::string>(c["ssl"], "ca_file", "");
+            }
         }
     } catch (...) {
         // Ignore or log

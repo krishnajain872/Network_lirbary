@@ -2,6 +2,7 @@
 #include "networklib/protocols/protocol_handler.h"
 #include "networklib/protocols/udp/udp_handler.h"
 #include "networklib/core/event/event_loop.h"
+#include "networklib/logger.h"
 #include <iostream>
 
 namespace networklib {
@@ -60,6 +61,16 @@ void Server::Init() {
         if (stream_handler_) {
             handler->SetStreamHandler(stream_handler_);
         }
+
+        // Resilience
+        if (config_.resilience.rate_limiter.enabled) {
+            auto bucket = std::make_shared<resilience::TokenBucket>(
+                config_.resilience.rate_limiter.requests_per_second,
+                config_.resilience.rate_limiter.burst_size
+            );
+            handler->SetRateLimiter(bucket);
+        }
+
         auto res = reactor_->RegisterServer(config_.network.port, handler, tls_ctx);
         if (!res) throw std::runtime_error(res.GetError().Message());
     }
@@ -88,7 +99,7 @@ bool Server::Start() {
         });
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Server start failed: " << e.what() << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Server start failed: %s", e.what());
         return false;
     }
 }

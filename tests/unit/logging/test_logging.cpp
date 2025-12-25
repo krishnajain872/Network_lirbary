@@ -21,9 +21,9 @@ TEST(LoggingTest, FileLogging) {
     std::string config = "appname=FileTest;logfile=" + log_file + ";console=false;severity=Info";
     EXPECT_TRUE(Logger::Initialize(config.c_str()));
 
-    LOG_INFO("This is an info message");
-    LOG_WARN("This is a warning");
-    LOG_DEBUG("This debug message should not appear");
+    Logger::Log(LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "This is an info message");
+    Logger::Log(LogLevel::Warn, __FILE__, __LINE__, __FUNCTION__, "This is a warning");
+    Logger::Log(LogLevel::Debug, __FILE__, __LINE__, __FUNCTION__, "This debug message should not appear");
 
     // Allow time for async flush
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -51,7 +51,7 @@ TEST(LoggingTest, ThreadSafety) {
     for (int i = 0; i < 10; ++i) {
         threads.emplace_back([i]() {
             for (int j = 0; j < 100; ++j) {
-                LOG_INFO("Thread %d message %d", i, j);
+                Logger::Log(LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Thread %d message %d", i, j);
             }
         });
     }

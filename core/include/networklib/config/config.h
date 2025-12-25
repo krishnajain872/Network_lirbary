@@ -284,7 +284,7 @@ struct ClientConfig {
         std::string host = "127.0.0.1";
         int port = 80;
     } network;
-    // Add more fields as needed
+    SslConfig ssl;
 };
 
 class ConfigParser {

@@ -3,6 +3,7 @@
 #include "networklib/core/event/udp_socket.h"
 #include "networklib/observability/metrics/metrics_collector.h"
 #include "networklib/protocols/udp/udp_handler.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <unistd.h>
 #include <sys/epoll.h>
@@ -78,7 +79,7 @@ utils::Result<void> Reactor::RegisterServer(int port,
 
                 // DDoS Protection Check
                 if (ddos_protection_ && !ddos_protection_->AllowConnection(client_ip)) {
-                    std::cerr << "[Security] Connection Rejected (DDoS/RateLimit): " << client_ip << std::endl;
+                    logging::Logger::Log(logging::LogLevel::Warn, __FILE__, __LINE__, __FUNCTION__, "[Security] Connection Rejected (DDoS/RateLimit): %s", client_ip.c_str());
                     close(client_fd);
                     continue;
                 }

@@ -5,7 +5,8 @@
 #include "networklib/config/config.h"
 #include "networklib/core/connection.h"
 #include "networklib/core/event/event_loop.h"
-#include "networklib/protocols/protocol_handler.h"
+#include "networklib/core/client/client_protocol.h"
+#include "networklib/security/tls_context.h"
 #include <thread>
 #include <future>
 
@@ -26,9 +27,10 @@ public:
 private:
     config::ClientConfig config_;
     MessageHandler message_handler_;
-    std::shared_ptr<protocols::ProtocolHandler> protocol_handler_;
+    std::unique_ptr<client::IClientProtocol> protocol_;
     std::unique_ptr<event::EventLoop> loop_;
     std::shared_ptr<Connection> connection_;
+    std::shared_ptr<networklib::security::TlsContext> tls_context_;
     std::thread loop_thread_;
     std::promise<bool> connect_promise_;
 };

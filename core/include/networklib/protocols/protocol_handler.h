@@ -6,6 +6,7 @@
 #include <functional>
 #include "networklib/core/connection.h"
 #include "networklib/network_lib.h" // For IStreamContext
+#include "networklib/core/resilience/token_bucket.h"
 
 // Forward decl
 namespace networklib { class StreamEnvelope; }
@@ -30,10 +31,20 @@ public:
         stream_handler_ = handler;
     }
 
+    virtual void SetRateLimiter(std::shared_ptr<core::resilience::TokenBucket> limiter) {
+        rate_limiter_ = limiter;
+    }
+
     using Ptr = std::shared_ptr<ProtocolHandler>;
 
 protected:
     StreamHandler stream_handler_;
+    std::shared_ptr<core::resilience::TokenBucket> rate_limiter_;
+
+    bool CheckRateLimit() {
+        if (rate_limiter_ && !rate_limiter_->Consume(1.0)) return false;
+        return true;
+    }
 };
 
 class ProtocolFactory {

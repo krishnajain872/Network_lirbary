@@ -1,4 +1,5 @@
 #include "networklib/network_lib.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <csignal>
 
@@ -11,6 +12,9 @@ void signal_handler(int) {
 }
 
 int main(int argc, char** argv) {
+    // Initialize logging
+    NetworkLib::InitializeLogger("appname=NetworkServer;console=true;severity=Info");
+
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
@@ -21,27 +25,28 @@ int main(int argc, char** argv) {
     }
 
     try {
-        std::cout << "Starting server from " << config_path << "..." << std::endl;
+        networklib::logging::Logger::Log(networklib::logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Starting server from %s...", config_path.c_str());
         
         auto server = NetworkLib::CreateServer(config_path);
         
         shutdown_handler = [&]() {
-            std::cout << "Shutting down..." << std::endl;
+            networklib::logging::Logger::Log(networklib::logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Shutting down...");
             server->Stop();
         };
 
         if (server->Start()) {
-            std::cout << "Server started. Press Ctrl+C to stop." << std::endl;
+            networklib::logging::Logger::Log(networklib::logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Server started. Press Ctrl+C to stop.");
             server->Wait();
         } else {
-            std::cerr << "Failed to start server." << std::endl;
+            networklib::logging::Logger::Log(networklib::logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Failed to start server.");
             return 1;
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "Fatal error: " << e.what() << std::endl;
+        networklib::logging::Logger::Log(networklib::logging::LogLevel::Fatal, __FILE__, __LINE__, __FUNCTION__, "Fatal error: %s", e.what());
         return 1;
     }
 
+    networklib::logging::Logger::Deinitialize();
     return 0;
 }

@@ -92,6 +92,7 @@ set(CORE_SOURCES
     core/src/connection.cpp
     core/src/server.cpp
     core/src/client.cpp
+    core/src/client/protocols/client_protocol.cpp
     core/src/network_lib.cpp
     core/src/security/tls_context.cpp
     core/src/protocols/protocol_factory.cpp
@@ -432,6 +433,17 @@ target_link_libraries(test_logging
     GTest::gtest_main
 )
 install(TARGETS test_logging
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Logging Example
+add_executable(logging_example
+    examples/logging/logging_example.cpp
+)
+target_link_libraries(logging_example
+    networklib
+)
+install(TARGETS logging_example
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
