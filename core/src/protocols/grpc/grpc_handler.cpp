@@ -3,7 +3,7 @@
 #include "networklib/protocols/grpc/service_registry.h"
 #include "stream_envelope.pb.h"
 #include "grpc_stream_impl.h"
-#include "networklib/network_lib.h"
+#include "networklib/logger.h"
 #include <iostream>
 
 namespace networklib {
@@ -59,7 +59,8 @@ void GrpcHandler::OnConnection(const core::Connection::Ptr& conn) {
                          ctx->Close(); // End stream for unary
                      }
                  } catch (const std::exception& e) {
-                     std::cerr << "StreamHandler error: " << e.what() << std::endl;
+                     logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "StreamHandler error: %s", e.what());
+                     // Send error status?
                  }
              }
         } else {
@@ -71,7 +72,7 @@ void GrpcHandler::OnConnection(const core::Connection::Ptr& conn) {
     });
 
     conn->SetContext(session);
-    std::cout << "gRPC Connection Established" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "gRPC Connection Established");
 }
 
 void GrpcHandler::OnMessage(const core::Connection::Ptr& conn) {
@@ -81,7 +82,7 @@ void GrpcHandler::OnMessage(const core::Connection::Ptr& conn) {
             session->OnData();
         }
     } catch (const std::bad_any_cast& e) {
-        std::cerr << "GrpcHandler: Context cast failed: " << e.what() << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "GrpcHandler: Context cast failed: %s", e.what());
     }
 }
 

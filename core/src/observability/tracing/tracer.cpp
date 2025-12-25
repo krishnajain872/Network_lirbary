@@ -1,4 +1,5 @@
 #include "networklib/core/observability/tracing/tracer.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <random>
 #include <iomanip>
@@ -41,13 +42,9 @@ std::shared_ptr<Span> Tracer::StartSpan(const std::string& name, const SpanConte
 void Tracer::Export(std::shared_ptr<Span> span) {
     // STUB: Export to Jaeger via HTTP or Log to stdout
     // For "Production Grade" stub, logging JSON structure is good proof
-    std::cout << "[TRACER] Span Finished: {"
-              << "\"name\": \"" << span->name << "\", "
-              << "\"trace_id\": \"" << span->context.trace_id << "\", "
-              << "\"span_id\": \"" << span->context.span_id << "\", "
-              << "\"parent_id\": \"" << span->context.parent_span_id << "\", "
-              << "\"duration_us\": " << (span->end_time_us - span->start_time_us)
-              << "}" << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__,
+        "[TRACER] Span Finished: {\"name\": \"%s\", \"trace_id\": \"%s\", \"span_id\": \"%s\", \"parent_id\": \"%s\", \"duration_us\": %ld}",
+        span->name.c_str(), span->context.trace_id.c_str(), span->context.span_id.c_str(), span->context.parent_span_id.c_str(), (span->end_time_us - span->start_time_us));
 }
 
 SpanContext Tracer::Extract(const std::map<std::string, std::string>& headers) {

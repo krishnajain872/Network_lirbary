@@ -2,6 +2,7 @@
 #include "networklib/protocols/protocol_handler.h"
 #include "networklib/protocols/udp/udp_handler.h"
 #include "networklib/core/event/event_loop.h"
+#include "networklib/logger.h"
 #include <iostream>
 
 namespace networklib {
@@ -98,7 +99,7 @@ bool Server::Start() {
         });
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Server start failed: " << e.what() << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Server start failed: %s", e.what());
         return false;
     }
 }

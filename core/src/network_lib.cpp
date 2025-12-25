@@ -2,6 +2,7 @@
 #include "networklib/core/server.h"
 #include "networklib/core/client.h"
 #include "networklib/config/config.h"
+#include "networklib/logger.h"
 
 namespace networklib {
 
@@ -18,6 +19,10 @@ std::shared_ptr<IServer> NetworkLib::CreateServer(const std::string& config_path
 std::shared_ptr<IClient> NetworkLib::CreateClient(const std::string& config_path) {
     auto config = config::ConfigParser::ParseClient(config_path);
     return std::make_shared<core::Client>(config);
+}
+
+bool NetworkLib::InitializeLogger(const char* config_string) {
+    return logging::Logger::Initialize(config_string);
 }
 
 } // namespace networklib

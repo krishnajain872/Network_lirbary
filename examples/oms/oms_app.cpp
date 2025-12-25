@@ -3,9 +3,14 @@
 #include "stream_envelope.pb.h"
 #include <iostream>
 #include <vector>
-#include <thread>
-#include <mutex>
-#include <set>
+#include "networklib/core/event/reactor.h"
+#include "networklib/core/event/event_loop.h"
+#include "networklib/protocols/grpc/service_registry.h"
+#include "networklib/protocols/grpc/grpc_handler.h"
+#include "networklib/logger.h"
+#include "market_data.h"
+#include "order_service.h"
+#include "market_feed.h"
 
 using namespace networklib;
 
@@ -36,50 +41,37 @@ private:
 };
 
 int main() {
-    std::cout << "Starting OMS..." << std::endl;
-    std::vector<std::shared_ptr<IServer>> servers;
+    logging::Logger::Initialize("appname=OMS;console=true;severity=Info");
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Starting OMS Reference Application...");
 
-    // 1. Order Entry Server (Port 50051)
-    config::ServerConfig order_cfg;
-    order_cfg.network.port = 50051;
-    order_cfg.mode = "tcp"; // Generic TCP/gRPC
+    auto loop = std::make_unique<core::event::EventLoop>();
+    loop->Init();
+    core::event::Reactor reactor(std::move(loop));
 
-    auto order_server = NetworkLib::CreateServer(order_cfg);
-    order_server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
-        std::cout << "[Order] Recv: " << req.payload().data() << std::endl;
-        resp.mutable_payload()->set_data("ACK-ORDER-123");
-    });
-    servers.push_back(order_server);
+    // 1. Market Data (UDP 9000)
+    auto md_handler = std::make_shared<oms::MarketDataHandler>();
+    reactor.RegisterUdpServer(9000, md_handler);
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Market Data (UDP) on 9000");
 
-    // 2. Market Feed Server (Port 8080 - WS)
-    config::ServerConfig feed_cfg;
-    feed_cfg.network.port = 8080;
-    feed_cfg.mode = "websocket";
+    // 2. Order Entry (gRPC 50051)
+    oms::OrderEntryService orderService;
+    protocols::grpc::ServiceRegistry::Instance().RegisterMethod(
+        "/oms.OrderEntry/StreamOrders", 
+        [&](std::shared_ptr<protocols::grpc::GrpcStream> s) { orderService.HandleStream(s); }
+    );
+    auto grpc_handler = std::make_shared<protocols::grpc::GrpcHandler>();
+    reactor.RegisterServer(50051, grpc_handler);
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Order Entry (gRPC) on 50051");
 
-    MarketFeed feed;
-    auto feed_server = NetworkLib::CreateServer(feed_cfg);
-    feed_server->RegisterStreamHandler([&feed](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
-        feed.HandleSubscription(req, resp, ctx);
-    });
-    servers.push_back(feed_server);
+    // 3. Market Feed (WebSocket 8080)
+    auto ws_handler = std::make_shared<oms::MarketFeedHandler>();
+    reactor.RegisterServer(8080, ws_handler);
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, " - Market Feed (WebSocket) on 8080");
 
-    // 3. Market Data Generator
-    std::thread market_thread([&feed]() {
-        int price = 100;
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-            price += (std::rand() % 5) - 2;
-            std::string update = "AAPL " + std::to_string(price);
-            feed.Broadcast(update);
-        }
-    });
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "OMS Running. Press Ctrl+C to stop.");
+    reactor.Run();
 
-    // Start all
-    for(auto& s : servers) s->Start();
+    logging::Logger::Deinitialize();
 
-    std::cout << "OMS Running. Press Enter to exit." << std::endl;
-    std::cin.get();
-
-    for(auto& s : servers) s->Stop();
     return 0;
 }

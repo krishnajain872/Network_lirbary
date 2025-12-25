@@ -1,7 +1,7 @@
 #include "networklib/protocols/websocket/websocket_handler.h"
 #include "networklib/protocols/websocket/handshake.h"
 #include "networklib/core/memory/buffer.h"
-#include "stream_envelope.pb.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -83,7 +83,7 @@ void WebSocketHandler::OnMessage(const core::Connection::Ptr& conn) {
                 std::string response = Handshake::GenerateResponse(res.Value());
                 conn->Send(response);
                 is_upgraded_ = true;
-                std::cout << "WebSocket Upgraded!" << std::endl;
+                logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "WebSocket Upgraded!");
             } else {
                 conn->Send("HTTP/1.1 400 Bad Request\r\n\r\n");
                 conn->ForceClose();

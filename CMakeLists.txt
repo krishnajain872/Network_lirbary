@@ -5,6 +5,44 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # --------------------------------------------------
+# Optimizations & Build Modes
+# --------------------------------------------------
+# 1. CCache Support
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
+# 2. Build Types (Debug, Release, ASan)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "ASan")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+set(CMAKE_CXX_FLAGS_ASAN "-O1 -g -fsanitize=address -fno-omit-frame-pointer -DDEBUG")
+set(CMAKE_EXE_LINKER_FLAGS_ASAN "-fsanitize=address")
+set(CMAKE_SHARED_LINKER_FLAGS_ASAN "-fsanitize=address")
+set(CMAKE_MODULE_LINKER_FLAGS_ASAN "-fsanitize=address")
+
+# 3. Interprocedural Optimization (LTO)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result OUTPUT output)
+if(result AND "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+# 4. Unity Build (Jumbo Build) - Optional
+option(ENABLE_UNITY_BUILD "Enable Unity Build (faster compilation)" OFF)
+if(ENABLE_UNITY_BUILD)
+    set(CMAKE_UNITY_BUILD ON)
+endif()
+
+# --------------------------------------------------
 # Install directories (BEST PRACTICE)
 # --------------------------------------------------
 include(GNUInstallDirs)
@@ -39,6 +77,12 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 # --------------------------------------------------
 # Core Sources
 # --------------------------------------------------
+set(LOGGING_SOURCES
+    core/src/logging/log_config.cpp
+    core/src/logging/async_logger.cpp
+    core/src/logging/logger.cpp
+)
+
 set(CORE_SOURCES
     core/src/event/event_loop.cpp
     core/src/event/socket.cpp
@@ -77,6 +121,7 @@ set(CORE_SOURCES
     core/src/observability/tracing/otlp_exporter.cpp
     core/src/event/udp_socket.cpp
     core/src/protocols/udp/udp_handler.cpp
+    ${LOGGING_SOURCES}
     ${PROTO_SRCS}
 )
 
@@ -87,8 +132,24 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 add_library(networklib ${CORE_SOURCES})
 
+# Optimization: Precompiled Headers
+target_precompile_headers(networklib PRIVATE
+    <vector>
+    <string>
+    <memory>
+    <map>
+    <thread>
+    <mutex>
+    <atomic>
+    <iostream>
+    <functional>
+    <cstring>
+    <algorithm>
+)
+
 target_include_directories(networklib PUBLIC
     core/include
+    core/include/networklib/external
     ${CMAKE_CURRENT_BINARY_DIR} # Generated protobuf headers
     ${Protobuf_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
@@ -102,6 +163,7 @@ target_link_libraries(networklib PUBLIC
     yaml-cpp
     uring
 )
+
 
 install(TARGETS networklib
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -359,6 +421,29 @@ add_executable(memory_benchmark
 target_link_libraries(memory_benchmark networklib)
 
 install(TARGETS memory_benchmark
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Logging Test
+add_executable(test_logging
+    tests/unit/logging/test_logging.cpp
+)
+target_link_libraries(test_logging
+    networklib
+    GTest::gtest_main
+)
+install(TARGETS test_logging
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Logging Example
+add_executable(logging_example
+    examples/logging/logging_example.cpp
+)
+target_link_libraries(logging_example
+    networklib
+)
+install(TARGETS logging_example
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
