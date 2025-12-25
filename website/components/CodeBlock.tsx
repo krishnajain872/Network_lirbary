@@ -1,34 +1,22 @@
 import { codeToHtml } from "shiki";
-import { CopyButton } from "./CopyButton";
 
-interface CodeBlockProps {
-  language: string;
-  code: string;
-  filename?: string;
-}
-
-export async function CodeBlock({ language, code, filename }: CodeBlockProps) {
+export async function CodeBlock({ code, lang, filename }: { code: string; lang: string; filename?: string }) {
   const html = await codeToHtml(code, {
-    lang: language,
-    theme: "github-dark", // Premium dark theme matching our aesthetic
+    lang,
+    theme: "github-dark",
   });
 
   return (
-    <div className="relative group rounded-lg border bg-[#0d1117] my-4 overflow-hidden shadow-sm">
+    <div className="my-4 rounded-lg overflow-hidden border border-slate-800 bg-[#0d1117]">
       {filename && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
-          <span className="text-xs font-medium text-gray-400">{filename}</span>
-          <span className="text-xs text-gray-500 uppercase">{language}</span>
+        <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 text-xs text-slate-400 font-mono">
+          {filename}
         </div>
       )}
-
-      <div className="relative">
-        <div
-           className="p-4 overflow-x-auto text-sm font-mono [&>pre]:!bg-transparent [&>pre]:!m-0"
-           dangerouslySetInnerHTML={{ __html: html }}
-        />
-        <CopyButton text={code} />
-      </div>
+      <div
+        className="p-4 overflow-x-auto text-sm font-mono [&>pre]:!bg-transparent"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     </div>
   );
 }
