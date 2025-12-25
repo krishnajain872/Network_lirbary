@@ -4,6 +4,7 @@
 #include <cassert>
 #include "networklib/core/event/event_loop.h"
 #include <sys/eventfd.h>
+#include <sys/epoll.h>
 
 using namespace networklib::core::event;
 

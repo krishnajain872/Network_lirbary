@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <iostream>
+#include <poll.h>
 
 namespace networklib {
 namespace core {

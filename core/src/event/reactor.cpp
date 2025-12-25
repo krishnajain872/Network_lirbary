@@ -6,6 +6,9 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 namespace networklib {
 namespace core {
@@ -23,7 +26,7 @@ void Reactor::SetDdosConfig(const security::DdosProtection::Config& config) {
 
 utils::Result<void> Reactor::RegisterServer(int port, 
                                           std::shared_ptr<protocols::ProtocolHandler> handler,
-                                          std::shared_ptr<security::TlsContext> tls_ctx) {
+                                          std::shared_ptr<networklib::security::TlsContext> tls_ctx) {
     tls_context_ = tls_ctx; // Store reference for hot reload
 
     auto sock_res = Socket::CreateNonBlocking();

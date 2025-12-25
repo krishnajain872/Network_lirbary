@@ -48,7 +48,7 @@ public:
      */
     utils::Result<void> RegisterServer(int port, 
                                      std::shared_ptr<protocols::ProtocolHandler> handler,
-                                     std::shared_ptr<security::TlsContext> tls_ctx = nullptr);
+                                     std::shared_ptr<networklib::security::TlsContext> tls_ctx = nullptr);
 
     /**
      * @brief Registers a UDP server to listen on a specific port.
@@ -73,13 +73,13 @@ public:
     /**
      * @brief Get the TLS context for updates.
      */
-    std::shared_ptr<security::TlsContext> GetTlsContext() { return tls_context_; }
+    std::shared_ptr<networklib::security::TlsContext> GetTlsContext() { return tls_context_; }
 
 private:
     std::unique_ptr<EventLoop> loop_;
     std::map<int, std::shared_ptr<Connection>> connections_;
     std::unique_ptr<security::DdosProtection> ddos_protection_;
-    std::shared_ptr<security::TlsContext> tls_context_;
+    std::shared_ptr<networklib::security::TlsContext> tls_context_;
 };
 
 } // namespace event

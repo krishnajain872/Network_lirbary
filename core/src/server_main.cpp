@@ -61,9 +61,9 @@ int main(int argc, char** argv) {
         }
         reactor.SetDdosConfig(ddos_cfg);
 
-        std::shared_ptr<core::security::TlsContext> tls_ctx = nullptr;
+        std::shared_ptr<networklib::security::TlsContext> tls_ctx = nullptr;
         if (config.ssl.enabled) {
-            tls_ctx = std::make_shared<core::security::TlsContext>();
+            tls_ctx = std::make_shared<networklib::security::TlsContext>();
             auto res = tls_ctx->Init(config.ssl.cert_file, config.ssl.key_file);
             if (!res) {
                 std::cerr << "Failed to init TLS: " << res.GetError().Message() << std::endl;
