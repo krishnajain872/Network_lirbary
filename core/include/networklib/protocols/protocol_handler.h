@@ -3,37 +3,36 @@
 
 #include <memory>
 #include <string>
+#include <functional>
 #include "networklib/core/connection.h"
+
+// Forward decl
+namespace networklib { class StreamEnvelope; }
 
 namespace networklib {
 namespace protocols {
 
 /**
  * @brief Abstract base class for all protocol handlers.
- * 
- * Defines the interface for handling connection events and data processing.
- * Concrete implementations (TcpHandler, HttpHandler) implement protocol-specific logic.
  */
 class ProtocolHandler {
 public:
+    using StreamHandler = std::function<void(const StreamEnvelope&, StreamEnvelope&)>;
+
     virtual ~ProtocolHandler() = default;
     
-    /**
-     * @brief Called when a new connection is accepted.
-     * 
-     * @param conn The new connection.
-     */
     virtual void OnConnection(const networklib::core::Connection::Ptr& conn) = 0;
-    
-    /**
-     * @brief Called when data is available on the socket.
-     * 
-     * @param conn The connection with available data.
-     */
     virtual void OnMessage(const networklib::core::Connection::Ptr& conn) = 0;
     
-    // Factory method type
+    // Optional generic handler
+    virtual void SetStreamHandler(StreamHandler handler) {
+        stream_handler_ = handler;
+    }
+
     using Ptr = std::shared_ptr<ProtocolHandler>;
+
+protected:
+    StreamHandler stream_handler_;
 };
 
 class ProtocolFactory {

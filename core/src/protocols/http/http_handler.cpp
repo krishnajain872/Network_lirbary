@@ -1,4 +1,5 @@
 #include "networklib/protocols/http/http_handler.h"
+#include "stream_envelope.pb.h"
 #include <sstream>
 #include <iostream>
 
@@ -17,12 +18,57 @@ void HttpHandler::OnMessage(const core::Connection::Ptr& conn) {
     if (!ctx) return;
 
     if (ParseRequest(buf, *ctx)) {
-        // Handle Request
-        std::string body = "Hello from NetworkLib HTTP Server!\nPath: " + ctx->path + "\n";
-        SendResponse(conn, 200, body);
+        if (stream_handler_) {
+            // Convert HTTP to StreamEnvelope
+            networklib::StreamEnvelope req_env;
+
+            // Map Method/Path to Message Type (e.g. "GET /api/foo")
+            req_env.mutable_header()->set_message_type(ctx->method + " " + ctx->path);
+            req_env.mutable_header()->set_protocol_version(ctx->version);
+
+            // Map Headers to Metadata
+            auto* meta_fields = req_env.mutable_metadata()->mutable_fields();
+            for (const auto& kv : ctx->headers) {
+                (*meta_fields)[kv.first] = kv.second;
+            }
+
+            // Map Body
+            if (!ctx->body.empty()) {
+                req_env.mutable_payload()->set_data(ctx->body);
+                req_env.mutable_payload()->set_size_bytes(ctx->body.size());
+            }
+
+            networklib::StreamEnvelope resp_env;
+            try {
+                // Invoke Application Callback
+                stream_handler_(req_env, resp_env);
+
+                // Convert Response StreamEnvelope to HTTP
+                std::string resp_body;
+                if (resp_env.has_payload()) {
+                    resp_body = resp_env.payload().data();
+                }
+
+                // Determine Status Code (default 200, check metadata)
+                int status = 200;
+                auto& resp_meta = resp_env.metadata().fields();
+                if (resp_meta.count("http_status")) {
+                    status = std::stoi(resp_meta.at("http_status"));
+                }
+
+                SendResponse(conn, status, resp_body);
+
+            } catch (const std::exception& e) {
+                SendResponse(conn, 500, "Internal Server Error: " + std::string(e.what()));
+            }
+        } else {
+            // Legacy/Raw Mode: Echo
+            std::string body = "Hello from NetworkLib HTTP Server!\nPath: " + ctx->path + "\n";
+            SendResponse(conn, 200, body);
+        }
         
-        // Reset for keep-alive or close if not
-        // For simple phase, close after response (HTTP/1.0 style)
+        // Reset context or close
+        // Simple implementation: close after response
         conn->Shutdown();
     }
 }
@@ -52,19 +98,23 @@ bool HttpHandler::ParseRequest(core::memory::Buffer& buf, HttpContext& ctx) {
                 
                 if (line.empty()) {
                     // End of headers
-                    ctx.state = HttpContext::kDone; // Skip body for GET
+                    // If Content-Length exists, expect body
+                    if (ctx.headers.count("Content-Length")) {
+                         ctx.state = HttpContext::kExpectBody;
+                         break;
+                    }
+                    ctx.state = HttpContext::kDone;
                     return true;
                 }
                 
                 // Parse Header
                 size_t colon = line.find(':');
                 if (colon != std::string::npos) {
-                    // Safety check for empty value
-                    if (colon + 2 <= line.length()) {
-                        ctx.headers[line.substr(0, colon)] = line.substr(colon + 2);
-                    } else {
-                        ctx.headers[line.substr(0, colon)] = "";
-                    }
+                    std::string key = line.substr(0, colon);
+                    std::string val = line.substr(colon + 2); // Skip ": "
+                    // Trim CR if present (FindCRLF handles it but let's be safe)
+                    if (!val.empty() && val.back() == '\r') val.pop_back();
+                    ctx.headers[key] = val;
                 }
             } else {
                 return false; // Need more data
@@ -72,6 +122,18 @@ bool HttpHandler::ParseRequest(core::memory::Buffer& buf, HttpContext& ctx) {
         }
     }
     
+    if (ctx.state == HttpContext::kExpectBody) {
+        // Naive: Read full body based on Content-Length
+        size_t len = std::stoi(ctx.headers["Content-Length"]);
+        if (buf.ReadableBytes() >= len) {
+            ctx.body = std::string(buf.Peek(), len);
+            buf.Retrieve(len);
+            ctx.state = HttpContext::kDone;
+            return true;
+        }
+        return false;
+    }
+
     return ctx.state == HttpContext::kDone;
 }
 
