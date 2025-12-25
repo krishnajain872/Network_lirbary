@@ -11,9 +11,8 @@ namespace quic {
 
 class QuicHandler : public ProtocolHandler {
 public:
-    void OnConnection(std::shared_ptr<core::Connection> conn) override;
-    void OnData(std::shared_ptr<core::Connection> conn, const std::vector<uint8_t>& data) override;
-    void OnDisconnect(std::shared_ptr<core::Connection> conn) override;
+    void OnConnection(const networklib::core::Connection::Ptr& conn) override;
+    void OnMessage(const networklib::core::Connection::Ptr& conn) override;
 };
 
 } // namespace quic

@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <errno.h>
+#include <sys/epoll.h>
 
 namespace networklib {
 namespace core {

@@ -15,33 +15,33 @@ struct QuicStream {
     std::string buffer;
 };
 
-void QuicHandler::OnConnection(std::shared_ptr<core::Connection> conn) {
+void QuicHandler::OnConnection(const networklib::core::Connection::Ptr& conn) {
     std::cout << "[QUIC] Handshake simulated. Connection established." << std::endl;
     // In real QUIC, we'd negotiate keys here
 }
 
-void QuicHandler::OnData(std::shared_ptr<core::Connection> conn, const std::vector<uint8_t>& data) {
-    // Basic packet parser simulation
+void QuicHandler::OnMessage(const networklib::core::Connection::Ptr& conn) {
+    // Basic packet parser simulation from InputBuffer
+    auto& buffer = conn->InputBuffer();
+
     // Format: [Type:1][StreamID:8][Payload]
-    if (data.size() < 9) return;
+    if (buffer.ReadableBytes() < 9) return;
+
+    // Peek/Read logic here. For simplicity, we just read everything
+    std::string data(buffer.Peek(), buffer.ReadableBytes());
+    buffer.RetrieveAll();
 
     uint8_t type = data[0];
-    uint64_t stream_id = 0;
-    // Basic byte copy for stream ID simulation
-    // This is purely to demonstrate handling "streams" different from TCP bytes
+    // uint64_t stream_id = 0; // Simulated
     
-    std::string payload(data.begin() + 9, data.end());
+    std::string payload = data.substr(9);
     
     if (type == 0x01) { // STREAM frame
-        std::cout << "[QUIC] Stream " << stream_id << " Data: " << payload << std::endl;
+        std::cout << "[QUIC] Stream 0 Data: " << payload << std::endl;
         // Echo back
         std::string response = "QUIC-ACK: " + payload;
         conn->Send(response); 
     }
-}
-
-void QuicHandler::OnDisconnect(std::shared_ptr<core::Connection> conn) {
-    std::cout << "[QUIC] Session Closed." << std::endl;
 }
 
 } // namespace quic

@@ -4,6 +4,7 @@
 #include "networklib/constants/errors.h"
 #include <iostream>
 #include <cstring>
+#include <sys/epoll.h>
 
 namespace networklib {
 namespace core {

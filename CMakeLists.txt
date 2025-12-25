@@ -59,12 +59,14 @@ set(CORE_SOURCES
     core/src/protocols/websocket/handshake.cpp
     core/src/protocols/websocket/frame_parser.cpp
     core/src/protocols/websocket/websocket_handler.cpp
+    core/src/protocols/quic/quic_handler.cpp
     core/src/protocols/rpc/rpc_handler.cpp
     core/src/config/config_parser.cpp
     core/src/config/config_hot_reload.cpp
     core/src/resilience/token_bucket.cpp
     core/src/resilience/circuit_breaker.cpp
     core/src/security/ddos_protection.cpp
+    core/src/event/epoll_poller.cpp
     core/src/event/io_uring_poller.cpp
     core/src/observability/metrics/metrics_collector.cpp
     core/src/observability/tracing/tracer.cpp
@@ -75,18 +77,42 @@ set(CORE_SOURCES
 )
 
 # --------------------------------------------------
-# Main Server Executable
+# Main Library (Dynamic by default)
 # --------------------------------------------------
-add_executable(network-server
-    core/src/server_main.cpp
-    ${CORE_SOURCES}
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+
+add_library(networklib ${CORE_SOURCES})
+
+target_include_directories(networklib PUBLIC
+    core/include
+    ${CMAKE_CURRENT_BINARY_DIR} # Generated protobuf headers
+    ${Protobuf_INCLUDE_DIRS}
+    ${OPENSSL_INCLUDE_DIR}
+    ${YAML_CPP_INCLUDE_DIR}
 )
 
-target_link_libraries(network-server
+target_link_libraries(networklib PUBLIC
     ${Protobuf_LIBRARIES}
     OpenSSL::SSL
     OpenSSL::Crypto
     yaml-cpp
+    uring
+)
+
+install(TARGETS networklib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+# --------------------------------------------------
+# Main Server Executable
+# --------------------------------------------------
+add_executable(network-server
+    core/src/server_main.cpp
+)
+
+target_link_libraries(network-server
+    networklib
 )
 
 # ✅ INSTALL THE SERVER (THIS FIXES YOUR DOCKER ERROR)
@@ -97,13 +123,9 @@ install(TARGETS network-server
 # HTTPS Integration Test
 add_executable(test_https_integration
     tests/integration/test_https_integration.cpp
-    ${CORE_SOURCES}
 )
 target_link_libraries(test_https_integration
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 
 install(TARGETS test_https_integration
@@ -113,9 +135,9 @@ install(TARGETS test_https_integration
 # HTTP/2 Frame Test
 add_executable(test_http2_frame
     tests/unit/protocols/test_http2_frame.cpp
-    core/src/protocols/http2/frame_parser.cpp
-    core/src/memory/buffer.cpp
-    core/src/memory/buffer_pool.cpp
+)
+target_link_libraries(test_http2_frame
+    networklib
 )
 
 install(TARGETS test_http2_frame
@@ -125,9 +147,9 @@ install(TARGETS test_http2_frame
 # gRPC Codec Test
 add_executable(test_grpc_codec
     tests/unit/protocols/test_grpc_codec.cpp
-    core/src/protocols/grpc/grpc_codec.cpp
-    core/src/memory/buffer.cpp
-    core/src/memory/buffer_pool.cpp
+)
+target_link_libraries(test_grpc_codec
+    networklib
 )
 
 install(TARGETS test_grpc_codec
@@ -137,13 +159,9 @@ install(TARGETS test_grpc_codec
 # gRPC E2E Test
 add_executable(test_grpc_e2e
     tests/integration/test_grpc_e2e.cpp
-    ${CORE_SOURCES}
 )
 target_link_libraries(test_grpc_e2e
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 
 install(TARGETS test_grpc_e2e
@@ -153,7 +171,9 @@ install(TARGETS test_grpc_e2e
 # WebSocket Test
 add_executable(test_websocket
     tests/unit/protocols/test_websocket.cpp
-    core/src/protocols/websocket/frame_parser.cpp
+)
+target_link_libraries(test_websocket
+    networklib
 )
 
 install(TARGETS test_websocket
@@ -163,10 +183,9 @@ install(TARGETS test_websocket
 # Stream Envelope Test
 add_executable(test_stream_envelope
     tests/unit/protocols/test_stream_envelope.cpp
-    ${PROTO_SRCS}
 )
 target_link_libraries(test_stream_envelope
-    ${Protobuf_LIBRARIES}
+    networklib
 )
 
 install(TARGETS test_stream_envelope
@@ -176,13 +195,9 @@ install(TARGETS test_stream_envelope
 # UDP Echo Test
 add_executable(test_udp_echo
     tests/integration/test_udp_echo.cpp
-    ${CORE_SOURCES}
 )
 target_link_libraries(test_udp_echo
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 
 install(TARGETS test_udp_echo
@@ -192,17 +207,13 @@ install(TARGETS test_udp_echo
 # OMS Reference Application
 add_executable(oms_app
     examples/oms/oms_app.cpp
-    ${CORE_SOURCES}
 )
 target_include_directories(oms_app PRIVATE 
     examples/oms
     ${CMAKE_CURRENT_BINARY_DIR} # Include generated protos
 )
 target_link_libraries(oms_app
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 
 install(TARGETS oms_app
@@ -220,17 +231,13 @@ install(TARGETS oms_load_test
 # OMS Terminal Client
 add_executable(oms_terminal
     examples/oms/terminal/terminal_app.cpp
-    ${CORE_SOURCES}
 )
 target_include_directories(oms_terminal PRIVATE 
     examples/oms
     ${CMAKE_CURRENT_BINARY_DIR} # Include generated protos
 )
 target_link_libraries(oms_terminal
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 install(TARGETS oms_terminal
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -239,8 +246,9 @@ install(TARGETS oms_terminal
 # Resilience Test
 add_executable(test_resilience
     tests/unit/core/test_resilience.cpp
-    core/src/resilience/token_bucket.cpp
-    core/src/resilience/circuit_breaker.cpp
+)
+target_link_libraries(test_resilience
+    networklib
 )
 
 install(TARGETS test_resilience
@@ -255,9 +263,8 @@ enable_testing()
 # Config Test
 add_executable(test_config
     tests/unit/config/test_config.cpp
-    core/src/config/config_parser.cpp
 )
-target_link_libraries(test_config yaml-cpp)
+target_link_libraries(test_config networklib yaml-cpp)
 
 install(TARGETS test_config
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -266,9 +273,10 @@ install(TARGETS test_config
 # Full Config Test
 add_executable(test_full_config
     tests/unit/config/test_full_config.cpp
-    core/src/config/config_parser.cpp
 )
-target_link_libraries(test_full_config yaml-cpp GTest::gtest_main)
+target_link_libraries(test_full_config networklib yaml-cpp GTest::gtest_main)
+include(GoogleTest)
+gtest_discover_tests(test_full_config)
 
 install(TARGETS test_full_config
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -277,10 +285,8 @@ install(TARGETS test_full_config
 # Event Loop Test
 add_executable(test_event_loop
     tests/unit/event/test_event_loop.cpp
-    core/src/event/event_loop.cpp
-    core/src/memory/buffer.cpp
-    core/src/memory/buffer_pool.cpp
 )
+target_link_libraries(test_event_loop networklib)
 target_include_directories(test_event_loop PUBLIC core/include)
 
 install(TARGETS test_event_loop
@@ -290,9 +296,8 @@ install(TARGETS test_event_loop
 # Buffer Test
 add_executable(test_buffer
     tests/unit/memory/test_buffer.cpp
-    core/src/memory/buffer.cpp
-    core/src/memory/buffer_pool.cpp
 )
+target_link_libraries(test_buffer networklib)
 
 install(TARGETS test_buffer
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -301,13 +306,9 @@ install(TARGETS test_buffer
 # HTTP Integration Test
 add_executable(test_http_integration
     tests/integration/test_http_integration.cpp
-    ${CORE_SOURCES}
 )
 target_link_libraries(test_http_integration
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 
 install(TARGETS test_http_integration
@@ -328,8 +329,8 @@ install(TARGETS connection_stress_test
 # Memory Benchmark
 add_executable(memory_benchmark
     tests/performance/memory_benchmark.cpp
-    core/src/memory/buffer_pool.cpp
 )
+target_link_libraries(memory_benchmark networklib)
 
 install(TARGETS memory_benchmark
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -340,13 +341,9 @@ install(TARGETS memory_benchmark
 # --------------------------------------------------
 pybind11_add_module(networklib_py
     bindings/python/networklib_py.cpp
-    ${CORE_SOURCES}
 )
 target_link_libraries(networklib_py PRIVATE
-    ${Protobuf_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
+    networklib
 )
 install(TARGETS networklib_py
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
