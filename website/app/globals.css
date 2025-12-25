@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@plugin "@tailwindcss/typography";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Oceanic Theme (Light) */
+  --oceanic-bg: #f0f9ff;
+  --oceanic-text: #0c4a6e;
+  --oceanic-primary: #0284c7;
+
+  /* Sunset Theme (Light) */
+  --sunset-bg: #fff7ed;
+  --sunset-text: #7c2d12;
+  --sunset-primary: #ea580c;
+}
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --color-oceanic-bg: var(--oceanic-bg);
+  --color-oceanic-text: var(--oceanic-text);
+  --color-oceanic-primary: var(--oceanic-primary);
+
+  --color-sunset-bg: var(--sunset-bg);
+  --color-sunset-text: var(--sunset-text);
+  --color-sunset-primary: var(--sunset-primary);
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+.oceanic {
+  --background: var(--oceanic-bg);
+  --foreground: var(--oceanic-text);
+}
+
+.sunset {
+  --background: var(--sunset-bg);
+  --foreground: var(--sunset-text);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
