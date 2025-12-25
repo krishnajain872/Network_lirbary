@@ -1,4 +1,5 @@
 #include "networklib/core/config/config_hot_reload.h"
+#include "networklib/logger.h"
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <iostream>
@@ -21,7 +22,7 @@ void ConfigHotReload::Start() {
     
     inotify_fd_ = inotify_init1(IN_NONBLOCK);
     if (inotify_fd_ < 0) {
-        std::cerr << "Failed to init inotify" << std::endl;
+        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Failed to init inotify");
         return;
     }
 
@@ -56,14 +57,14 @@ void ConfigHotReload::WatchLoop() {
         for (ptr = buffer; ptr < buffer + len; ptr += sizeof(struct inotify_event) + event->len) {
             event = (const struct inotify_event *)ptr;
             if (event->mask & (IN_MODIFY | IN_CLOSE_WRITE)) {
-                std::cout << "[Config] Change detected, reloading..." << std::endl;
+                logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[Config] Change detected, reloading...");
                 try {
                     ServerConfig new_config = ConfigParser::Parse(filepath_);
                     if (callback_) {
                         callback_(new_config);
                     }
                 } catch (const std::exception& e) {
-                    std::cerr << "[Config] Reload failed: " << e.what() << std::endl;
+                    logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "[Config] Reload failed: %s", e.what());
                 }
             }
         }

@@ -77,6 +77,13 @@ namespace networklib {
         static std::shared_ptr<IServer> CreateServer(const config::ServerConfig& config);
         static std::shared_ptr<IServer> CreateServer(const std::string& config_path);
         static std::shared_ptr<IClient> CreateClient(const std::string& config_path);
+
+        /**
+         * @brief Initialize the global logger.
+         * @param config_string Semicolon-separated config string (e.g., "appname=MyApp;console=true").
+         * @return true if initialized successfully.
+         */
+        static bool InitializeLogger(const char* config_string);
     };
 
 } // namespace networklib

@@ -1,4 +1,5 @@
 #include "networklib/core/observability/tracing/otlp_exporter.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <sstream>
 
@@ -29,7 +30,7 @@ void OtlpExporter::Export(const std::vector<std::shared_ptr<Span>>& spans) {
 
     // STUB: Send HTTP POST to endpoint_
     // Using std::cout to prove payload generation for Phase 21
-    std::cout << "[OTLP] Exporting to " << endpoint_ << ": " << json.str() << std::endl;
+    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[OTLP] Exporting to %s: %s", endpoint_.c_str(), json.str().c_str());
 }
 
 } // namespace observability

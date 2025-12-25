@@ -1,5 +1,6 @@
 #include "networklib/protocols/rpc/rpc_handler.h"
 #include "stream_envelope.pb.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <arpa/inet.h>
 #include <cstring>
@@ -36,7 +37,7 @@ void RpcHandler::OnMessage(const core::Connection::Ptr& conn) {
         StreamEnvelope envelope;
         if (envelope.ParseFromArray(header + 4, length)) {
             // Dispatch
-            std::cout << "RPC Recv: " << envelope.header().message_type() << std::endl;
+            logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "RPC Recv: %s", envelope.header().message_type().c_str());
             
             // Simple Echo Logic for Phase 17
             StreamEnvelope response;
