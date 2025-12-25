@@ -64,37 +64,18 @@ const navItems = [
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false); // Mobile state
-  const [isCollapsed, setIsCollapsed] = useState(false); // Desktop state
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <>
-      {/* Mobile Trigger */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden fixed top-3 left-4 z-50"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X /> : <Menu />}
-      </Button>
-
-      {/* Sidebar Container */}
+      {/* Desktop Sidebar Container */}
       <motion.aside
         initial={false}
         animate={{
           width: isCollapsed ? "80px" : "280px",
-          x: isOpen ? 0 : "-100%", // Slide in on mobile
         }}
-        // Reset x on desktop (lg breakpoint is 1024px)
-        style={{ x: 0 }} // We will handle mobile responsiveness with CSS classes mostly
         className={cn(
-          "fixed top-0 left-0 z-40 h-screen border-r bg-card/50 backdrop-blur-xl transition-all duration-300 ease-in-out",
-          "lg:translate-x-0", // Always visible on desktop
-          // Mobile specific override handled by the animate prop if we were doing pure JS,
-          // but mixing Framer Motion with Tailwind breakpoints can be tricky.
-          // Let's use a conditional class for mobile visibility
-          !isOpen && "max-lg:-translate-x-full",
+          "hidden lg:block fixed top-0 left-0 z-40 h-screen border-r bg-card/50 backdrop-blur-xl transition-all duration-300 ease-in-out",
           className
         )}
       >
