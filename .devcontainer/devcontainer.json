@@ -1,0 +1,29 @@
+{
+    "name": "Network Library Dev",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "twxs.cmake",
+                "vadimcn.vscode-lldb"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "cmake.configureOnOpen": true
+            }
+        }
+    },
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt", "seccomp=unconfined",
+        "--network=host"
+    ],
+    "forwardPorts": [8080, 50051, 9090],
+    "postCreateCommand": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..",
+    "remoteUser": "root"
+}

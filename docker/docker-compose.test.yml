@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  test-runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.build
+      target: source-builder
+      args:
+        BUILD_TYPE: Debug
+        ENABLE_TESTS: ON
+    image: networklib:test
+    container_name: networklib-tests
+    command: ["ctest", "--output-on-failure", "--verbose"]
+    working_dir: /src/build
+    volumes:
+      - ..:/src
+    networks:
+      - networklib-net
+
+networks:
+  networklib-net:
+    driver: bridge

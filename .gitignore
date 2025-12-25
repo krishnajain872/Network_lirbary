@@ -1,0 +1,9 @@
+build/
+.vscode/
+.cache/
+*.log
+*.tmp
+node_modules/
+.next/
+dist/
+target/

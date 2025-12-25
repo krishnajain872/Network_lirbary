@@ -1,0 +1,65 @@
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.build
+      target: runtime
+      args:
+        BUILD_TYPE: Release
+    image: networklib:latest
+    container_name: networklib-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # HTTP
+      - "50051:50051" # gRPC
+      - "9090:9090"   # Metrics
+    volumes:
+      - ../config:/app/config:ro
+      - ../certs:/app/certs:ro
+      - ./logs:/var/log/networklib
+    command: ["/usr/local/bin/network-server", "/app/config/examples/basic_tcp.yaml"]
+    networks:
+      - networklib-net
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ../examples/oms/frontend
+      dockerfile: Dockerfile
+    image: oms-frontend:latest
+    container_name: oms-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - networklib-net
+    depends_on:
+      - server
+
+  terminal:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.build
+      target: runtime
+      args:
+        BUILD_TYPE: Release
+    image: networklib:latest
+    container_name: oms-terminal
+    # Keep container running to allow 'docker exec' or 'docker attach'
+    command: ["/bin/bash", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - networklib-net
+    depends_on:
+      - server
+
+networks:
+  networklib-net:
+    driver: bridge

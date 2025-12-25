@@ -1,0 +1,135 @@
+# docker/Dockerfile.build
+# =====================================================
+# Stage 1: Base builder image
+# =====================================================
+FROM ubuntu:22.04 AS builder-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    wget \
+    pkg-config \
+    gcc-12 \
+    g++-12 \
+    clang-15 \
+    clang-format-15 \
+    clang-tidy-15 \
+    libssl-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libgrpc++-dev \
+    protobuf-compiler-grpc \
+    libyaml-cpp-dev \
+    libgtest-dev \
+    liburing-dev \
+    pybind11-dev \
+    python3-dev \
+    python3-pip \
+    ccache \
+    doxygen \
+    graphviz \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CC=gcc-12
+ENV CXX=g++-12
+ENV CCACHE_DIR=/cache/ccache
+
+RUN mkdir -p /cache/ccache
+WORKDIR /build
+
+
+# =====================================================
+# Stage 2: Source builder
+# =====================================================
+FROM builder-base AS source-builder
+
+# Optimize caching: Copy only CMake files first
+COPY CMakeLists.txt /src/CMakeLists.txt
+COPY core/include /src/core/include
+COPY protocols/proto /src/protocols/proto
+# We need basic source structure for CMake to configure, but minimal files
+# This is hard to perfect without listing every file, so we stick to COPY . /src
+# but we rely on ccache for speed.
+
+COPY . /src
+WORKDIR /src
+
+ARG BUILD_TYPE=Release
+ARG ENABLE_TESTS=ON
+ARG ENABLE_EXAMPLES=ON
+ARG ENABLE_BENCHMARKS=ON
+
+# Use ccache to speed up recompilation
+# The ccache dir is at /cache/ccache (from base image)
+# We expect this volume to be mounted or preserved if using BuildKit
+
+RUN cmake -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DENABLE_TESTS=${ENABLE_TESTS} \
+    -DENABLE_EXAMPLES=${ENABLE_EXAMPLES} \
+    -DENABLE_BENCHMARKS=${ENABLE_BENCHMARKS} \
+    -DCMAKE_INSTALL_PREFIX=/usr/local
+
+RUN cmake --build build --parallel $(nproc)
+
+RUN if [ "${ENABLE_TESTS}" = "ON" ]; then \
+        cd build && ctest --output-on-failure || true; \
+    fi
+
+RUN cmake --install build
+
+
+# =====================================================
+# Stage 3: Runtime image (SAFE DEFAULT)
+# =====================================================
+FROM ubuntu:22.04 AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    libprotobuf23 \
+    libgrpc++1 \
+    libyaml-cpp0.7 \
+    ca-certificates \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=source-builder /usr/local /usr/local
+
+RUN ldconfig
+
+RUN useradd -m -u 1000 -s /bin/bash networklib
+USER networklib
+
+WORKDIR /app
+
+# SAFE DEFAULT:
+# - No assumption about executable name
+# - Prevents "no such file or directory" crash
+CMD ["/bin/bash"]
+
+
+# =====================================================
+# Stage 4: Debug image (optional)
+# =====================================================
+FROM source-builder AS debug
+
+RUN apt-get update && apt-get install -y \
+    gdb \
+    valgrind \
+    strace \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget -O /tmp/delve.tar.gz \
+    https://github.com/go-delve/delve/releases/download/v1.21.0/delve-linux-amd64.tar.gz && \
+    tar -C /usr/local/bin -xzf /tmp/delve.tar.gz && \
+    rm /tmp/delve.tar.gz
+
+EXPOSE 2345 2346
+CMD ["/bin/bash"]

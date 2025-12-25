@@ -1,0 +1,557 @@
+// protocols/proto/stream_envelope.proto
+syntax = "proto3";
+
+package networklib;
+
+// ============================================================================
+// CORE ENVELOPE - Universal message wrapper
+// ============================================================================
+
+message StreamEnvelope {
+  // Mandatory header with routing and metadata
+  Header header = 1;
+  
+  // Actual payload data
+  Payload payload = 2;
+  
+  // Extensible metadata
+  Metadata metadata = 3;
+  
+  // Distributed tracing context
+  TraceContext trace = 4;
+  
+  // Security context
+  SecurityContext security = 5;
+  
+  // Quality of Service settings
+  QoSSettings qos = 6;
+}
+
+// ============================================================================
+// HEADER - Routing and control information
+// ============================================================================
+
+message Header {
+  // Unique message identifier (UUID v4)
+  string message_id = 1;
+  
+  // Correlation ID for request-response tracking
+  string correlation_id = 2;
+  
+  // Causation ID for event sourcing
+  string causation_id = 3;
+  
+  // Timestamp (Unix epoch in microseconds)
+  int64 timestamp_us = 4;
+  
+  // Message version for backward compatibility
+  string version = 5;
+  
+  // Source endpoint information
+  Endpoint source = 6;
+  
+  // Destination endpoint information
+  Endpoint destination = 7;
+  
+  // Message type/operation (e.g., "chat.message", "trade.order")
+  string message_type = 8;
+  
+  // Protocol version
+  string protocol_version = 9;
+  
+  // Message priority (0=lowest, 10=highest, 5=normal)
+  int32 priority = 10;
+  
+  // Time-to-live in milliseconds
+  int64 ttl_ms = 11;
+  
+  // Retry information
+  RetryInfo retry_info = 12;
+  
+  // Stream information (for streaming messages)
+  StreamInfo stream_info = 13;
+  
+  // Session identifier
+  string session_id = 14;
+  
+  // Request/response indicator
+  MessageDirection direction = 15;
+  
+  // Content encoding information
+  string content_encoding = 16;
+}
+
+enum MessageDirection {
+  REQUEST = 0;
+  RESPONSE = 1;
+  EVENT = 2;
+  COMMAND = 3;
+}
+
+message Endpoint {
+  // Service name
+  string service_name = 1;
+  
+  // Instance identifier
+  string instance_id = 2;
+  
+  // Host address
+  string host = 3;
+  
+  // Port number
+  int32 port = 4;
+  
+  // Geographic region
+  string region = 5;
+  
+  // Availability zone
+  string zone = 6;
+  
+  // Deployment environment (dev, staging, prod)
+  string environment = 7;
+  
+  // Service version
+  string version = 8;
+}
+
+message RetryInfo {
+  // Current retry attempt (0 for first attempt)
+  int32 attempt = 1;
+  
+  // Maximum retry attempts allowed
+  int32 max_attempts = 2;
+  
+  // Backoff duration in milliseconds
+  int64 backoff_ms = 3;
+  
+  // Exponential backoff multiplier
+  double backoff_multiplier = 4;
+  
+  // Maximum backoff duration
+  int64 max_backoff_ms = 5;
+  
+  // Enable jitter to prevent thundering herd
+  bool enable_jitter = 6;
+  
+  // Original timestamp of first attempt
+  int64 original_timestamp_us = 7;
+}
+
+message StreamInfo {
+  // Unique stream identifier
+  string stream_id = 1;
+  
+  // Sequence number within stream
+  int64 sequence_number = 2;
+  
+  // Total messages in stream (if known)
+  int64 total_messages = 3;
+  
+  // Stream type
+  StreamType stream_type = 4;
+  
+  // Is this the last message in stream?
+  bool is_final = 5;
+  
+  // Stream state
+  StreamState state = 6;
+}
+
+enum StreamType {
+  UNARY = 0;              // Single request-response
+  SERVER_STREAMING = 1;    // Server sends multiple responses
+  CLIENT_STREAMING = 2;    // Client sends multiple requests
+  BIDIRECTIONAL = 3;       // Full duplex streaming
+}
+
+enum StreamState {
+  STREAM_OPEN = 0;
+  STREAM_ACTIVE = 1;
+  STREAM_PAUSED = 2;
+  STREAM_CLOSING = 3;
+  STREAM_CLOSED = 4;
+  STREAM_ERROR = 5;
+}
+
+// ============================================================================
+// PAYLOAD - Actual data content
+// ============================================================================
+
+message Payload {
+  // Content type (application/json, application/protobuf, etc.)
+  string content_type = 1;
+  
+  // Encoding (none, gzip, brotli, zstd, lz4)
+  string encoding = 2;
+  
+  // Actual data bytes
+  bytes data = 3;
+  
+  // Uncompressed data size in bytes
+  int64 size_bytes = 4;
+  
+  // Compressed size (if compressed)
+  int64 compressed_size_bytes = 5;
+  
+  // Checksum for integrity verification (SHA-256)
+  string checksum = 6;
+  
+  // Checksum algorithm used
+  string checksum_algorithm = 7;
+  
+  // Schema information for typed payloads
+  SchemaInfo schema = 8;
+  
+  // Payload encryption info
+  EncryptionInfo encryption = 9;
+  
+  // Chunking information for large payloads
+  ChunkInfo chunk_info = 10;
+}
+
+message SchemaInfo {
+  // Schema name/identifier
+  string schema_name = 1;
+  
+  // Schema version
+  string schema_version = 2;
+  
+  // Schema registry URL
+  string schema_registry_url = 3;
+  
+  // Schema format (protobuf, avro, json-schema)
+  string schema_format = 4;
+  
+  // Schema hash for validation
+  string schema_hash = 5;
+}
+
+message EncryptionInfo {
+  // Encryption algorithm (AES-256-GCM, ChaCha20-Poly1305)
+  string algorithm = 1;
+  
+  // Key identifier (not the actual key!)
+  string key_id = 2;
+  
+  // Initialization vector
+  bytes iv = 3;
+  
+  // Authentication tag
+  bytes auth_tag = 4;
+}
+
+message ChunkInfo {
+  // Chunk identifier
+  string chunk_id = 1;
+  
+  // Current chunk index
+  int32 chunk_index = 2;
+  
+  // Total number of chunks
+  int32 total_chunks = 3;
+  
+  // Chunk size in bytes
+  int64 chunk_size_bytes = 4;
+}
+
+// ============================================================================
+// METADATA - Extensible key-value pairs
+// ============================================================================
+
+message Metadata {
+  // Generic key-value fields
+  map<string, string> fields = 1;
+  
+  // Authentication token (JWT, OAuth, etc.)
+  string auth_token = 2;
+  
+  // Request context
+  map<string, string> context = 3;
+  
+  // Feature flags for A/B testing
+  map<string, bool> feature_flags = 4;
+  
+  // Custom headers (HTTP-like)
+  map<string, string> custom_headers = 5;
+  
+  // User agent information
+  string user_agent = 6;
+  
+  // Client IP address (for logging/security)
+  string client_ip = 7;
+  
+  // API version
+  string api_version = 8;
+  
+  // Tenant/organization identifier
+  string tenant_id = 9;
+  
+  // User identifier
+  string user_id = 10;
+  
+  // Tags for routing/filtering
+  repeated string tags = 11;
+}
+
+// ============================================================================
+// TRACE CONTEXT - Distributed tracing
+// ============================================================================
+
+message TraceContext {
+  // Trace identifier (W3C format)
+  string trace_id = 1;
+  
+  // Span identifier
+  string span_id = 2;
+  
+  // Parent span identifier
+  string parent_span_id = 3;
+  
+  // Trace state (vendor-specific)
+  map<string, string> trace_state = 4;
+  
+  // Baggage items (propagated key-value pairs)
+  map<string, string> baggage = 5;
+  
+  // Is this trace sampled?
+  bool sampled = 6;
+  
+  // Sampling priority
+  int32 sampling_priority = 7;
+  
+  // Trace flags
+  int32 flags = 8;
+}
+
+// ============================================================================
+// SECURITY CONTEXT - Authentication and authorization
+// ============================================================================
+
+message SecurityContext {
+  // Authentication method (JWT, OAuth, mTLS, API-Key)
+  string auth_method = 1;
+  
+  // Subject/principal identifier
+  string subject = 2;
+  
+  // Issuer of authentication token
+  string issuer = 3;
+  
+  // Expiration timestamp
+  int64 expires_at = 4;
+  
+  // Scopes/permissions
+  repeated string scopes = 5;
+  
+  // Roles
+  repeated string roles = 6;
+  
+  // Claims (JWT claims or similar)
+  map<string, string> claims = 7;
+  
+  // Certificate fingerprint (for mTLS)
+  string cert_fingerprint = 8;
+}
+
+// ============================================================================
+// QOS SETTINGS - Quality of Service
+// ============================================================================
+
+message QoSSettings {
+  // Reliability level
+  ReliabilityLevel reliability = 1;
+  
+  // Delivery guarantee
+  DeliveryGuarantee delivery = 2;
+  
+  // Message durability
+  bool durable = 3;
+  
+  // Expiration timestamp
+  int64 expires_at = 4;
+  
+  // Maximum processing time
+  int64 max_processing_time_ms = 5;
+  
+  // Rate limit for this message type
+  RateLimit rate_limit = 6;
+}
+
+enum ReliabilityLevel {
+  BEST_EFFORT = 0;
+  AT_LEAST_ONCE = 1;
+  EXACTLY_ONCE = 2;
+  AT_MOST_ONCE = 3;
+}
+
+enum DeliveryGuarantee {
+  NO_GUARANTEE = 0;
+  GUARANTEED = 1;
+  ORDERED = 2;
+  TRANSACTIONAL = 3;
+}
+
+message RateLimit {
+  // Requests per second
+  int32 requests_per_second = 1;
+  
+  // Burst size
+  int32 burst_size = 2;
+  
+  // Time window in seconds
+  int32 window_seconds = 3;
+}
+
+// ============================================================================
+// STREAM CONTROL - Control messages for stream management
+// ============================================================================
+
+message StreamControl {
+  // Control message type
+  ControlType type = 1;
+  
+  // Target stream identifier
+  string stream_id = 2;
+  
+  // Sequence number for ordering
+  int64 sequence_number = 3;
+  
+  // Control parameters
+  map<string, string> parameters = 4;
+  
+  // Reason for control message
+  string reason = 5;
+  
+  // Error information (if applicable)
+  ErrorInfo error = 6;
+}
+
+enum ControlType {
+  START = 0;          // Start streaming
+  PAUSE = 1;          // Pause streaming
+  RESUME = 2;         // Resume streaming
+  STOP = 3;           // Stop streaming
+  ACK = 4;            // Acknowledgment
+  NACK = 5;           // Negative acknowledgment
+  HEARTBEAT = 6;      // Keep-alive
+  BACKPRESSURE = 7;   // Flow control
+  RESET = 8;          // Reset stream
+  CANCEL = 9;         // Cancel stream
+}
+
+message ErrorInfo {
+  // Error code
+  string code = 1;
+  
+  // Human-readable message
+  string message = 2;
+  
+  // Error details
+  map<string, string> details = 3;
+  
+  // Stack trace (for debugging)
+  string stack_trace = 4;
+  
+  // Retry recommendation
+  bool retryable = 5;
+}
+
+// ============================================================================
+// RESPONSE ENVELOPE - Wraps responses with metadata
+// ============================================================================
+
+message ResponseEnvelope {
+  // Original request
+  StreamEnvelope request = 1;
+  
+  // Response status
+  Status status = 2;
+  
+  // Status code
+  int32 status_code = 3;
+  
+  // Error message (if failed)
+  string error_message = 4;
+  
+  // Error code (if failed)
+  string error_code = 5;
+  
+  // Error details
+  ErrorInfo error_info = 6;
+  
+  // Actual response
+  StreamEnvelope response = 7;
+  
+  // Processing time in microseconds
+  int64 processing_time_us = 8;
+  
+  // Server timestamp
+  int64 server_timestamp_us = 9;
+  
+  // Retry after (if rate limited)
+  int64 retry_after_ms = 10;
+}
+
+enum Status {
+  SUCCESS = 0;
+  ERROR = 1;
+  TIMEOUT = 2;
+  RETRY = 3;
+  RATE_LIMITED = 4;
+  NOT_FOUND = 5;
+  UNAUTHORIZED = 6;
+  FORBIDDEN = 7;
+  INVALID_REQUEST = 8;
+  SERVICE_UNAVAILABLE = 9;
+}
+
+// ============================================================================
+// BIDIRECTIONAL STREAMING SERVICE
+// ============================================================================
+
+service BidirectionalStream {
+  // Full duplex bidirectional streaming
+  rpc Stream(stream StreamEnvelope) returns (stream StreamEnvelope);
+  
+  // Server streaming (unidirectional: server→client)
+  rpc ServerStream(StreamEnvelope) returns (stream StreamEnvelope);
+  
+  // Client streaming (unidirectional: client→server)
+  rpc ClientStream(stream StreamEnvelope) returns (StreamEnvelope);
+  
+  // Unary request-response
+  rpc Unary(StreamEnvelope) returns (ResponseEnvelope);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  string message = 2;
+  int64 timestamp = 3;
+}
+
+// ============================================================================
+// BATCH OPERATIONS
+// ============================================================================
+
+message BatchRequest {
+  repeated StreamEnvelope requests = 1;
+  bool atomic = 2;  // All or nothing
+}
+
+message BatchResponse {
+  repeated ResponseEnvelope responses = 1;
+  bool success = 2;
+}

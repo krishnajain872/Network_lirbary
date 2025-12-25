@@ -1,0 +1,12 @@
+server:
+  mode: "tcp"
+  name: "test-server"
+  version: "1.0.0"
+  network:
+    host: "0.0.0.0"
+    port: 8080
+    protocol: "tcp"
+  protocols:
+    tcp:
+      enabled: true
+      port: 8080

@@ -1,0 +1,16 @@
+server:
+  mode: "http"
+  name: "secure-http-server"
+  version: "1.0.0"
+  network:
+    host: "0.0.0.0"
+    port: 8443
+    protocol: "tcp"
+  ssl:
+    enabled: true
+    cert_file: "/certs/server.crt"
+    key_file: "/certs/server.key"
+  protocols:
+    http:
+      enabled: true
+      port: 8443

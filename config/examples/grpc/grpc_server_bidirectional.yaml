@@ -1,0 +1,433 @@
+# config/examples/grpc/grpc_server_bidirectional.yaml
+
+# ============================================================================
+# SERVER CONFIGURATION - gRPC Bidirectional Streaming
+# ============================================================================
+
+server:
+  # Operating mode: http, grpc, rpc, websocket, tcp, udp, quic, mixed
+  mode: "grpc"
+  
+  # Server identity
+  name: "grpc-bidirectional-server"
+  version: "1.0.0"
+  environment: "production"  # dev, staging, production
+  
+  # Network configuration
+  network:
+    # Bind address
+    host: "0.0.0.0"
+    
+    # Port number
+    port: 50051
+    
+    # Protocol: tcp, udp, quic
+    protocol: "tcp"
+    
+    # IP version: ipv4, ipv6, dual
+    ip_version: "dual"
+    
+    # Socket options
+    socket:
+      # Reuse address
+      so_reuseaddr: true
+      
+      # Reuse port (for multi-process)
+      so_reuseport: true
+      
+      # TCP nodelay (disable Nagle's algorithm)
+      tcp_nodelay: true
+      
+      # TCP keep-alive
+      tcp_keepalive: true
+      tcp_keepalive_idle_sec: 60
+      tcp_keepalive_interval_sec: 10
+      tcp_keepalive_count: 3
+      
+      # Receive buffer size (bytes)
+      so_rcvbuf: 2097152  # 2MB
+      
+      # Send buffer size (bytes)
+      so_sndbuf: 2097152  # 2MB
+      
+      # Listen backlog
+      backlog: 4096
+  
+  # ========================================
+  # PROTOCOL-SPECIFIC SETTINGS
+  # ========================================
+  
+  protocols:
+    # gRPC Configuration
+    grpc:
+      # Enable gRPC protocol
+      enabled: true
+      
+      # Streaming configuration
+      streaming:
+        # Enable bidirectional streaming
+        bidirectional: true
+        
+        # Enable server streaming
+        server_streaming: true
+        
+        # Enable client streaming
+        client_streaming: true
+        
+        # Enable unary (request-response)
+        unary: true
+        
+        # Maximum concurrent streams per connection
+        max_concurrent_streams: 1000
+        
+        # Initial flow control window size
+        initial_window_size: 65535
+        
+        # Maximum frame size
+        max_frame_size: 16384
+        
+        # Stream keep-alive
+        keepalive_time_ms: 7200000  # 2 hours
+        keepalive_timeout_ms: 20000
+        keepalive_permit_without_calls: true
+        
+        # Maximum connection idle time
+        max_connection_idle_ms: 300000  # 5 minutes
+        max_connection_age_ms: 0  # Unlimited
+        max_connection_age_grace_ms: 0
+      
+      # Message size limits
+      max_receive_message_size_mb: 100
+      max_send_message_size_mb: 100
+      max_metadata_size_kb: 8
+      
+      # Compression
+      compression:
+        enabled: true
+        algorithms: ["gzip", "deflate", "snappy"]
+        default_algorithm: "gzip"
+        compression_level: 6  # 1-9
+      
+      # HTTP/2 settings
+      http2:
+        max_header_list_size: 16384
+        enable_push: false
+        initial_connection_window_size: 1048576  # 1MB
+    
+    # HTTP Configuration (can be enabled alongside gRPC)
+    http:
+      enabled: false
+      port: 8080
+      version: "2.0"  # 1.1, 2.0, 3.0 (QUIC)
+      
+    # WebSocket Configuration
+    websocket:
+      enabled: false
+      port: 8081
+      
+    # Raw TCP/UDP
+    tcp:
+      enabled: false
+      port: 9090
+    
+    udp:
+      enabled: false
+      port: 9091
+  
+  # ========================================
+  # SSL/TLS CONFIGURATION
+  # ========================================
+  
+  ssl:
+    # Enable TLS
+    enabled: true
+    
+    # TLS version
+    min_tls_version: "1.3"
+    max_tls_version: "1.3"
+    
+    # Certificates
+    cert_file: "/certs/server.crt"
+    key_file: "/certs/server.key"
+    ca_file: "/certs/ca.crt"
+    
+    # Client certificate verification
+    verify_client: false
+    client_cert_required: false
+    
+    # Cipher suites (TLS 1.3)
+    cipher_suites:
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_AES_128_GCM_SHA256"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+    
+    # Session tickets
+    session_tickets: true
+    session_ticket_keys_file: "/certs/session_keys.txt"
+    
+    # Session resumption
+    session_cache_size: 20000
+    session_timeout_sec: 86400  # 24 hours
+    
+    # ALPN protocols
+    alpn_protocols:
+      - "h2"  # HTTP/2
+      - "grpc-exp"
+    
+    # Certificate pinning
+    certificate_pinning:
+      enabled: false
+      pins: []
+  
+  # ========================================
+  # PERFORMANCE CONFIGURATION
+  # ========================================
+  
+  performance:
+    # Connection limits
+    max_connections: 10000000000  # 10 billion
+    max_connections_per_ip: 1000
+    connection_timeout_ms: 5000
+    request_timeout_ms: 30000
+    
+    # Threading
+    io_threads: "auto"  # or specific number (e.g., 8)
+    worker_threads: "auto"
+    thread_affinity: true  # Pin threads to CPU cores
+    
+    # NUMA awareness
+    enable_numa: true
+    numa_policy: "local"  # local, interleave
+    
+    # Event loop
+    event_loop_type: "auto"  # auto, epoll, kqueue, iocp, io_uring
+    
+    # Zero-copy optimizations
+    enable_zero_copy: true
+    use_sendfile: true
+    use_splice: true
+    
+    # io_uring support (Linux 5.1+)
+    use_io_uring: true
+    io_uring_entries: 2048
+    io_uring_flags: ["SQPOLL", "IOPOLL"]
+    
+    # Memory management
+    memory:
+      # Custom allocator: jemalloc, tcmalloc, mimalloc, system
+      allocator: "jemalloc"
+      
+      # Memory pools
+      enable_memory_pools: true
+      connection_pool_size: 100000
+      buffer_pool_size: 100000
+      
+      # Huge pages
+      enable_huge_pages: true
+      huge_page_size_mb: 2
+      
+      # Memory limits
+      max_memory_per_connection_kb: 512
+      max_total_memory_gb: 100
+    
+    # CPU optimization
+    cpu:
+      # CPU affinity
+      enable_cpu_affinity: true
+      
+      # CPU isolation
+      isolated_cores: []  # List of core IDs
+      
+      # SIMD optimizations
+      enable_simd: true
+  
+  # ========================================
+  # CONNECTION POOL CONFIGURATION
+  # ========================================
+  
+  connection_pool:
+    # Minimum idle connections
+    min_idle: 100
+    
+    # Maximum idle connections
+    max_idle: 10000
+    
+    # Maximum connection lifetime
+    max_lifetime_ms: 3600000  # 1 hour
+    
+    # Idle timeout
+    idle_timeout_ms: 600000  # 10 minutes
+    
+    # Cleanup interval
+    cleanup_interval_ms: 60000  # 1 minute
+    
+    # Connection validation
+    validate_on_borrow: true
+    validate_on_return: false
+    validation_query_timeout_ms: 3000
+    
+    # Pre-warming
+    enable_prewarming: true
+    prewarm_connections: 1000
+  
+  # ========================================
+  # RESILIENCE PATTERNS
+  # ========================================
+  
+  resilience:
+    # Circuit Breaker Pattern
+    circuit_breaker:
+      enabled: true
+      failure_threshold_percentage: 50
+      success_threshold: 10
+      timeout_ms: 60000
+      min_requests: 20
+      rolling_window_ms: 10000
+      
+    # Rate Limiter
+    rate_limiter:
+      enabled: true
+      algorithm: "token_bucket"  # token_bucket, leaky_bucket, fixed_window
+      requests_per_second: 1000000
+      burst_size: 100000
+      
+      # Per-IP rate limiting
+      per_ip_enabled: true
+      per_ip_requests_per_second: 1000
+      per_ip_burst_size: 100
+    
+    # Bulkhead Pattern (Resource Isolation)
+    bulkhead:
+      enabled: true
+      max_concurrent_requests: 100000
+      queue_size: 50000
+      queue_timeout_ms: 5000
+    
+    # Timeout Management
+    timeout:
+      connection_timeout_ms: 5000
+      request_timeout_ms: 30000
+      idle_timeout_ms: 300000
+      
+    # Health Check
+    health_check:
+      enabled: true
+      interval_ms: 10000
+      timeout_ms: 3000
+      unhealthy_threshold: 3
+      healthy_threshold: 2
+    
+    # Graceful Shutdown
+    graceful_shutdown:
+      enabled: true
+      timeout_ms: 30000
+      drain_connections: true
+  
+  # ========================================
+  # STREAM ENVELOPE CONFIGURATION
+  # ========================================
+  
+  stream_envelope:
+    # Schema validation
+    validate_schema: true
+    strict_validation: false
+    
+    # Compression
+    enable_compression: true
+    compression_algorithm: "gzip"
+    compression_level: 6
+    min_size_for_compression_bytes: 1024
+    
+    # Checksums
+    enable_checksums: true
+    checksum_algorithm: "sha256"
+    
+    # Limits
+    max_payload_size_mb: 10
+    max_metadata_size_kb: 64
+    max_header_size_kb: 16
+    
+    # Auto-population
+    auto_populate_message_id: true
+    auto_populate_timestamp: true
+    auto_populate_source: true
+    
+    # Tracing
+    enable_distributed_tracing: true
+    trace_sampling_rate: 0.01  # 1%
+  
+  # ========================================
+  # OBSERVABILITY
+  # ========================================
+  
+  observability:
+    # Metrics
+    metrics:
+      enabled: true
+      port: 9090
+      format: "prometheus"  # prometheus, statsd, influxdb
+      path: "/metrics"
+      
+      # Metric collection
+      collect_interval_ms: 1000
+      
+      # Histograms
+      enable_histograms: true
+      histogram_buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0]
+      
+      # Metrics to collect
+      metrics_list:
+        - "request_count"
+        - "request_duration"
+        - "active_connections"
+        - "bytes_sent"
+        - "bytes_received"
+        - "error_count"
+        - "connection_pool_size"
+        - "memory_usage"
+        - "cpu_usage"
+    
+    # Logging
+    logging:
+      level: "info"  # trace, debug, info, warn, error, fatal
+      format: "json"  # json, text, logfmt
+      output: "stdout"  # stdout, stderr, file
+      file_path: "/var/log/network-server.log"
+      max_size_mb: 100
+      max_backups: 10
+      max_age_days: 30
+      compress: true
+      
+      # Structured logging fields
+      include_timestamp: true
+      include_caller: true
+      include_stacktrace_on_error: true
+      
+      # Log sampling (reduce volume)
+      sampling:
+        enabled: false
+        initial: 100
+        thereafter: 100
+    
+    # Distributed Tracing
+    tracing:
+      enabled: true
+      exporter: "jaeger"  # jaeger, zipkin, otlp
+      endpoint: "http://jaeger:14268/api/traces"
+      
+      # Sampling
+      sampling_rate: 0.01  # 1%
+      sampling_type: "probabilistic"  # always, never, probabilistic
+      
+      # Trace attributes
+      service_name: "network-server"
+      service_version: "1.0.0"
+      deployment_environment: "production"
+      
+    # Profiling
+    profiling:
+      enabled: true
+      cpu_profile_enabled: true
+      memory_profile_enabled: true
+      profile_path: "/tmp/profiles"
+      profile_duration_sec: 30

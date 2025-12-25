@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  server-debug:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.build
+      target: debug
+      args:
+        BUILD_TYPE: Debug
+    image: networklib:debug
+    container_name: networklib-debug
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+      - "2345:2345" # GDB/Delve
+    volumes:
+      - ..:/src
+      - ../config:/app/config:ro
+    command: ["/bin/bash", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - networklib-net
+
+networks:
+  networklib-net:
+    driver: bridge
