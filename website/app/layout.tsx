@@ -1,35 +1,51 @@
-"use client";
-
-import "./globals.css";
-import { Sidebar } from "@/components/Layout/Sidebar";
-import { Navbar } from "@/components/Layout/Navbar";
-import AnimatedBackground from "@/components/Background/AnimatedBackground";
-import { useState } from "react";
+import { Geist, Geist_Mono } from "next/font/google";
+import "@/styles/globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Sidebar } from "@/components/Sidebar";
+import { Header } from "@/components/Header";
+import { Search } from "@/components/Search";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata = {
+  title: "NetworkLib Documentation",
+  description: "A high-performance C++20 network library.",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div className="min-h-screen relative flex flex-col">
-              <AnimatedBackground />
-              <Navbar onMenuClick={() => setSidebarOpen(true)} />
-
-              <div className="flex flex-1 pt-16">
-                <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-
-                <main className="flex-1 md:ml-64 w-full min-h-[calc(100vh-4rem)] relative z-10">
-                  {children}
-                </main>
-              </div>
-            </div>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
+      >
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="dark"
+          enableSystem={false}
+          themes={['dark', 'light', 'high-contrast', 'oceanic', 'sunset', 'cyberpunk']}
+        >
+          <div className="flex min-h-screen">
+             <Sidebar />
+             <main className="flex-1 lg:pl-[280px] flex flex-col min-h-screen transition-all duration-300">
+                <Header />
+                <div className="flex-1 p-6 lg:p-10 relative overflow-hidden">
+                   {children}
+                </div>
+             </main>
+             <Search />
+          </div>
         </ThemeProvider>
       </body>
     </html>
