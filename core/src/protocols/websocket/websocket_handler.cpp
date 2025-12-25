@@ -99,20 +99,33 @@ void WebSocketHandler::OnMessage(const core::Connection::Ptr& conn) {
         if (parser_.Parse(buf.Peek(), buf.ReadableBytes(), consumed, frame)) {
             buf.Retrieve(consumed);
             
-            if (frame.opcode == OpCode::kText) {
-                std::string msg(frame.payload.begin(), frame.payload.end());
-                logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "WS Recv: %s", msg.c_str());
-                
-                // Echo back (masked=false for server-to-client)
-                // Need a Frame encoder. 
-                // For Phase 16, manual construct:
-                // Fin=1, Op=1, Mask=0, Len=msg.size()
-                std::vector<char> resp;
-                resp.push_back(0x81); // Fin | Text
-                resp.push_back(static_cast<uint8_t>(msg.size())); // Assumes < 126
-                resp.insert(resp.end(), msg.begin(), msg.end());
-                
-                conn->Send(std::string(resp.begin(), resp.end()));
+            if (frame.opcode == OpCode::kText || frame.opcode == OpCode::kBinary) {
+                if (!CheckRateLimit()) {
+                    conn->ForceClose(); // Or send Close frame with 1008
+                    return;
+                }
+                if (stream_handler_) {
+                    networklib::StreamEnvelope req;
+                    req.mutable_header()->set_message_type("websocket");
+                    req.mutable_payload()->set_data(std::string(frame.payload.begin(), frame.payload.end()));
+
+                    networklib::StreamEnvelope resp;
+                    auto ctx = std::make_shared<WebSocketStreamContext>(conn);
+
+                    try {
+                        stream_handler_(req, resp, ctx);
+
+                        // If handler populated resp, send it immediately
+                        // (Handler can also use ctx.Write later)
+                        if (resp.has_payload()) {
+                            ctx->Write(resp);
+                        }
+                    } catch (...) {}
+                } else {
+                    // Echo Legacy
+                    std::string msg(frame.payload.begin(), frame.payload.end());
+                    // ... echo logic ...
+                }
             } else if (frame.opcode == OpCode::kClose) {
                 conn->ForceClose();
                 return;
