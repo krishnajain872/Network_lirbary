@@ -1,7 +1,6 @@
-"use client";
-
 import { PageTransition } from "@/components/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Mermaid } from "@/components/Mermaid";
 
 const architectureDiagram = `
@@ -20,70 +19,159 @@ graph TD
     end
 `;
 
+const classDiagram = `
+classDiagram
+    class Server {
+        +Run()
+        +OnMessage()
+    }
+    class EventLoop {
+        +Run()
+        +AddFd()
+        -poller_ : Poller
+    }
+    class Poller {
+        <<interface>>
+        +Poll()
+    }
+    class EpollPoller {
+        +Poll()
+    }
+    class IoUringPoller {
+        +Poll()
+    }
+    class Connection {
+        +HandleRead()
+        +HandleWrite()
+        +Send()
+        -input_buffer_ : Buffer
+    }
+
+    Server --> EventLoop
+    EventLoop --> Poller
+    Poller <|-- EpollPoller
+    Poller <|-- IoUringPoller
+    EventLoop --> Connection
+`;
+
 export default function Architecture() {
   return (
     <PageTransition>
-      <div className="space-y-8 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-4">System Architecture</h1>
-        <p className="text-xl text-muted-foreground">
-           Deep dive into the reactor pattern, threading model, and memory management.
-        </p>
+      <div className="space-y-12 max-w-4xl">
+        <div>
+          <h1 className="text-4xl font-bold mb-4">System Architecture</h1>
+          <p className="text-xl text-muted-foreground">
+             A deep dive into the High-Level Design (HLD) and Low-Level Design (LLD) of NetworkLib.
+          </p>
+        </div>
 
+        {/* HLD SECTION */}
         <section className="space-y-6">
-           <h2 className="text-2xl font-semibold">High-Level Design (HLD)</h2>
-           <p className="text-muted-foreground">
-              NetworkLib adopts a <strong>Reactor Pattern</strong> with a <strong className="text-primary">One-Loop-Per-Thread</strong> architecture.
-              This ensures minimal lock contention and maximizes CPU cache locality.
-           </p>
+           <h2 className="text-3xl font-bold tracking-tight border-b pb-2">High-Level Design (HLD)</h2>
 
-           <Card className="p-6 overflow-hidden">
-             <Mermaid chart={architectureDiagram} />
+           <h3 className="text-xl font-semibold mt-6">Reactor Pattern</h3>
+           <Card>
+              <CardContent className="pt-6">
+                 <p className="text-muted-foreground mb-4">
+                    NetworkLib adopts a <strong>Reactor Pattern</strong> with a <strong className="text-primary">One-Loop-Per-Thread</strong> architecture.
+                    This ensures minimal lock contention and maximizes CPU cache locality. Each thread has its own `EventLoop` and is pinned to a specific CPU core.
+                 </p>
+                 <div className="flex justify-center p-4 bg-muted/20 rounded-lg">
+                    <Mermaid chart={architectureDiagram} />
+                 </div>
+              </CardContent>
            </Card>
 
-           <div className="grid md:grid-cols-2 gap-6">
+           <div className="grid md:grid-cols-2 gap-6 mt-4">
               <Card>
                  <CardContent className="pt-6">
-                    <h3 className="font-bold text-lg mb-2">Core Components</h3>
-                    <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                       <li><strong>EventLoop:</strong> Wraps `epoll` or `io_uring` to handle non-blocking I/O events.</li>
-                       <li><strong>Acceptor:</strong> Handles incoming connections and distributes them to workers.</li>
-                       <li><strong>Worker Threads:</strong> Execute application logic and protocol parsing independently.</li>
-                       <li><strong>Connection:</strong> Represents a client session, managing buffers and state.</li>
-                    </ul>
+                    <h3 className="font-bold text-lg mb-2">Non-Blocking I/O</h3>
+                    <p className="text-sm text-muted-foreground">
+                       All networking operations are non-blocking. The system never waits for `read()` or `write()`.
+                       Instead, it registers interest in events via `epoll` or `io_uring` and reacts via callbacks.
+                    </p>
                  </CardContent>
               </Card>
               <Card>
                  <CardContent className="pt-6">
-                    <h3 className="font-bold text-lg mb-2">Data Flow</h3>
-                    <ol className="list-decimal pl-5 space-y-1 text-sm text-muted-foreground">
-                       <li>Client initiates connection (TCP handshake).</li>
-                       <li>Main Acceptor accepts socket and hands it off to a Worker via Round-Robin.</li>
-                       <li>Worker registers socket with its local `EventLoop`.</li>
-                       <li>Data arrives -&gt; triggers Read Event -&gt; Protocol Decoder -&gt; User Callback.</li>
-                    </ol>
+                    <h3 className="font-bold text-lg mb-2">Zero-Copy Data Path</h3>
+                    <p className="text-sm text-muted-foreground">
+                       Data flows from the kernel to the user application with minimal copying.
+                       We utilize `splice()` for proxying and `sendfile()` for static assets.
+                    </p>
                  </CardContent>
               </Card>
            </div>
         </section>
 
+        {/* LLD SECTION */}
         <section className="space-y-6">
-           <h2 className="text-2xl font-semibold">Low-Level Details (LLD)</h2>
+           <h2 className="text-3xl font-bold tracking-tight border-b pb-2">Low-Level Design (LLD)</h2>
 
-           <h3 className="text-xl font-medium">Memory Management</h3>
+           <h3 className="text-xl font-semibold mt-6">Core Class Hierarchy</h3>
            <p className="text-muted-foreground">
-              To achieve zero-allocation during steady state, we use:
+              The core library is built around strict segregation of duties.
            </p>
-           <ul className="list-disc pl-6 text-muted-foreground">
-              <li><strong>Object Pools:</strong> Recyclable `Connection` and `Buffer` objects.</li>
-              <li><strong>Ring Buffers:</strong> For lock-free communication between threads (if needed).</li>
-              <li><strong>Zero-Copy:</strong> Uses `splice` and `sendfile` where applicable.</li>
-           </ul>
+           <div className="bg-card border rounded-lg p-4 overflow-hidden">
+              <Mermaid chart={classDiagram} />
+           </div>
 
-           <h3 className="text-xl font-medium mt-6">Protocol Abstraction</h3>
-           <p className="text-muted-foreground">
-              Protocols are implemented as state machines that consume a `ByteStream`.
-              Switching protocols is as simple as swapping the `ProtocolHandler` implementation on the connection.
-           </p>
+           <div className="space-y-6 mt-6">
+              <Card>
+                 <CardContent className="pt-6">
+                    <h4 className="font-bold text-lg flex items-center gap-2">
+                       <Badge variant="outline">Core</Badge> EventLoop & Poller
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                       The `EventLoop` class is the heart of the system. It delegates actual syscalls to a `Poller` strategy:
+                    </p>
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-muted-foreground">
+                       <li><strong>EpollPoller:</strong> Uses `epoll_wait` (Linux legacy). Level-triggered by default.</li>
+                       <li><strong>IoUringPoller:</strong> Uses the modern `io_uring` submission/completion queues for async batching.</li>
+                    </ul>
+                 </CardContent>
+              </Card>
+
+              <Card>
+                 <CardContent className="pt-6">
+                    <h4 className="font-bold text-lg flex items-center gap-2">
+                       <Badge variant="outline">Core</Badge> Connection State Machine
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                       Each `Connection` object manages a file descriptor and buffers. It transitions through:
+                    </p>
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                       <Badge variant="secondary">kConnecting</Badge>
+                       <Badge variant="secondary">kHandshaking (TLS)</Badge>
+                       <Badge variant="secondary">kConnected</Badge>
+                       <Badge variant="secondary">kDisconnecting</Badge>
+                       <Badge variant="secondary">kDisconnected</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                       <strong>Write Handling:</strong> The `HandleWrite()` method manages a userspace output buffer.
+                       It only enables `EPOLLOUT` when the kernel socket buffer is full (`EAGAIN`), preventing busy loops.
+                    </p>
+                 </CardContent>
+              </Card>
+
+              <Card>
+                 <CardContent className="pt-6">
+                    <h4 className="font-bold text-lg flex items-center gap-2">
+                       <Badge variant="outline">Memory</Badge> Object Pools
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-2">
+                       To avoid `malloc/free` latency during runtime, we use `ObjectPool&lt;T&gt;` for:
+                    </p>
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-muted-foreground">
+                       <li>`Connection` objects (reused immediately after disconnect).</li>
+                       <li>`Buffer` chunks (4KB blocks).</li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground mt-2">
+                       The pool uses a `std::vector` stack with a mutex, but contention is low because each thread has its own local pools (Thread-Local Storage pattern).
+                    </p>
+                 </CardContent>
+              </Card>
+           </div>
         </section>
       </div>
     </PageTransition>

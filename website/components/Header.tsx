@@ -2,6 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
+import { MobileNav } from "@/components/MobileNav";
 import {
    Moon,
    Sun,
@@ -45,7 +46,8 @@ export function Header() {
   const Icon = currentTheme.icon;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 lg:px-6 backdrop-blur-xl">
+       <MobileNav />
        <div className="flex-1">
           <Button
             variant="outline"

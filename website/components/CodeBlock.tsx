@@ -1,8 +1,5 @@
-"use client";
-
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { codeToHtml } from "shiki";
+import { CopyButton } from "./CopyButton";
 
 interface CodeBlockProps {
   language: string;
@@ -10,37 +7,27 @@ interface CodeBlockProps {
   filename?: string;
 }
 
-export function CodeBlock({ language, code, filename }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+export async function CodeBlock({ language, code, filename }: CodeBlockProps) {
+  const html = await codeToHtml(code, {
+    lang: language,
+    theme: "github-dark", // Premium dark theme matching our aesthetic
+  });
 
   return (
-    <div className="relative group rounded-lg border bg-muted/40 my-4 overflow-hidden">
+    <div className="relative group rounded-lg border bg-[#0d1117] my-4 overflow-hidden shadow-sm">
       {filename && (
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50">
-          <span className="text-xs font-medium text-muted-foreground">{filename}</span>
-          <span className="text-xs text-muted-foreground uppercase">{language}</span>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
+          <span className="text-xs font-medium text-gray-400">{filename}</span>
+          <span className="text-xs text-gray-500 uppercase">{language}</span>
         </div>
       )}
 
       <div className="relative">
-        <pre className="p-4 overflow-x-auto text-sm font-mono">
-          <code className={`language-${language}`}>{code}</code>
-        </pre>
-
-        <Button
-          size="icon"
-          variant="ghost"
-          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={copyToClipboard}
-        >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        </Button>
+        <div
+           className="p-4 overflow-x-auto text-sm font-mono [&>pre]:!bg-transparent [&>pre]:!m-0"
+           dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <CopyButton text={code} />
       </div>
     </div>
   );

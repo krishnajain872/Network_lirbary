@@ -1,5 +1,3 @@
-"use client";
-
 import { PageTransition } from "@/components/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
 import { CodeBlock } from "@/components/CodeBlock";

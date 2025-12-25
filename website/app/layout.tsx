@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Search } from "@/components/Search";
+import { TOC } from "@/components/structure/TOC";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,8 +41,9 @@ export default function RootLayout({
              <Sidebar />
              <main className="flex-1 lg:pl-[280px] flex flex-col min-h-screen transition-all duration-300">
                 <Header />
-                <div className="flex-1 p-6 lg:p-10 relative overflow-hidden">
+                <div className="flex-1 p-6 lg:p-10 relative overflow-hidden xl:pr-80">
                    {children}
+                   <TOC />
                 </div>
              </main>
              <Search />
