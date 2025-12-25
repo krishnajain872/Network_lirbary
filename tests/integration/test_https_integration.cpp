@@ -21,6 +21,7 @@ int main() {
     }
 
     auto loop = std::make_unique<core::event::EventLoop>();
+    loop->Init();
     core::event::Reactor reactor(std::move(loop));
     auto handler = std::make_shared<protocols::http::HttpHandler>();
     
