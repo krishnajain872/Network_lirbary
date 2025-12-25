@@ -11,13 +11,18 @@ void signal_handler(int) {
     if (shutdown_handler) shutdown_handler();
 }
 
-int main() {
+int main(int argc, char** argv) {
     signal(SIGINT, signal_handler);
+
+    std::string mode = "http";
+    if (argc > 1) mode = argv[1];
 
     // Create Config manually
     config::ServerConfig config;
-    config.mode = "http";
+    config.mode = mode;
     config.network.port = 8091;
+
+    std::cout << "Starting C++ Generic Server (" << mode << ") on 8091..." << std::endl;
 
     auto server = NetworkLib::CreateServer(config);
 
