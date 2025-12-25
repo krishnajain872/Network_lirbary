@@ -48,6 +48,22 @@ export function getAllDocs(): DocPost[] {
   });
 }
 
+// Simple heading parser until we use rehype plugins properly in MDXRemote
+function extractHeadings(content: string) {
+  const headings = [];
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const match = line.match(/^(#{2,3})\s+(.+)$/);
+    if (match) {
+      const level = match[1].length;
+      const text = match[2];
+      const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+      headings.push({ id, text, level });
+    }
+  }
+  return headings;
+}
+
 export function getDocBySlug(slug: string[]) {
   const realSlug = slug.join(path.sep);
   const fullPath = path.join(contentDirectory, `${realSlug}.mdx`);
@@ -58,10 +74,12 @@ export function getDocBySlug(slug: string[]) {
 
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const { data, content } = matter(fileContents);
+  const headings = extractHeadings(content);
 
   return {
     slug,
     frontmatter: data,
     content,
+    headings,
   };
 }
