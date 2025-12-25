@@ -13,12 +13,15 @@ namespace logging {
 class KafkaSink : public LogSink {
 public:
     KafkaSink(const std::string& broker, const std::string& topic) {
+        (void)broker;
+        (void)topic;
 #ifdef ENABLE_KAFKA
         // RdKafka initialization would go here
 #endif
     }
 
     void Write(const LogEntry& entry) override {
+        (void)entry;
 #ifdef ENABLE_KAFKA
         // Produce message to Kafka
 #else

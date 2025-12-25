@@ -20,14 +20,14 @@ static std::vector<std::string> split(const std::string& s, char delimiter) {
 static LogLevel StringToLogLevel(const std::string& level) {
     std::string s = level;
     std::transform(s.begin(), s.end(), s.begin(), ::toupper);
-    if (s == "TRACE") return LogLevel::TRACE;
-    if (s == "DEBUG") return LogLevel::DEBUG;
-    if (s == "INFO") return LogLevel::INFO;
-    if (s == "WARN") return LogLevel::WARN;
-    if (s == "ERROR") return LogLevel::ERROR;
-    if (s == "FATAL") return LogLevel::FATAL;
-    if (s == "CRITICAL") return LogLevel::CRITICAL;
-    return LogLevel::INFO;
+    if (s == "TRACE") return LogLevel::Trace;
+    if (s == "DEBUG") return LogLevel::Debug;
+    if (s == "INFO") return LogLevel::Info;
+    if (s == "WARN") return LogLevel::Warn;
+    if (s == "ERROR") return LogLevel::Error;
+    if (s == "FATAL") return LogLevel::Fatal;
+    if (s == "CRITICAL") return LogLevel::Critical;
+    return LogLevel::Info;
 }
 
 static size_t ParseBytes(const std::string& s) {

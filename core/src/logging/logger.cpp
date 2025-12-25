@@ -41,41 +41,44 @@ static int GetProcessId() {
 #endif
 }
 
-bool Logger::Initialize(const char* config_string) {
-    if (g_logger) return false; // Already initialized
+} // namespace logging
 
-    g_config = ParseConfig(config_string);
-    g_logger = new AsyncLogger();
-    g_logger->Initialize(g_config);
+// Define class methods OUTSIDE namespace blocks to avoid ambiguity if header/source mismatch occurred
+bool logging::Logger::Initialize(const char* config_string) {
+    if (logging::g_logger) return false; // Already initialized
+
+    logging::g_config = logging::ParseConfig(config_string);
+    logging::g_logger = new logging::AsyncLogger();
+    logging::g_logger->Initialize(logging::g_config);
     return true;
 }
 
-void Logger::Deinitialize() {
-    if (g_logger) {
-        g_logger->Shutdown();
-        delete g_logger;
-        g_logger = nullptr;
+void logging::Logger::Deinitialize() {
+    if (logging::g_logger) {
+        logging::g_logger->Shutdown();
+        delete logging::g_logger;
+        logging::g_logger = nullptr;
     }
 }
 
-bool Logger::IsLevelEnabled(LogLevel level) {
-    if (!g_logger) return false;
-    return level >= g_config.severity;
+bool logging::Logger::IsLevelEnabled(logging::LogLevel level) {
+    if (!logging::g_logger) return false;
+    return level >= logging::g_config.severity;
 }
 
-void Logger::Log(LogLevel level, const char* file, int line, const char* func, const char* format, ...) {
-    if (!g_logger || !IsLevelEnabled(level)) return;
+void logging::Logger::Log(logging::LogLevel level, const char* file, int line, const char* func, const char* format, ...) {
+    if (!logging::g_logger || !IsLevelEnabled(level)) return;
 
-    LogEntry entry;
+    logging::LogEntry entry;
     entry.timestamp = std::chrono::system_clock::now();
     entry.level = level;
     entry.file = file ? file : "";
     entry.line = line;
     entry.function = func ? func : "";
     entry.thread_id = std::this_thread::get_id();
-    entry.thread_name = GetThreadName(); // Uses thread_local cache
-    entry.process_id = GetProcessId();
-    entry.sequence = t_sequence++;
+    entry.thread_name = logging::GetThreadName(); // Uses thread_local cache
+    entry.process_id = logging::GetProcessId();
+    entry.sequence = logging::t_sequence++;
 
     // Format message
     char buffer[4096];
@@ -85,8 +88,7 @@ void Logger::Log(LogLevel level, const char* file, int line, const char* func, c
     va_end(args);
     entry.message = buffer;
 
-    g_logger->Enqueue(std::move(entry));
+    logging::g_logger->Enqueue(std::move(entry));
 }
 
-} // namespace logging
 } // namespace networklib
