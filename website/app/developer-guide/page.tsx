@@ -1,71 +1,68 @@
-import { PageTransition } from "@/components/PageTransition";
-import { Card, CardContent } from "@/components/ui/card";
 import { CodeBlock } from "@/components/CodeBlock";
 
 export default function DeveloperGuide() {
   return (
-    <PageTransition>
-      <div className="space-y-8 max-w-4xl">
+    <div className="p-10 space-y-10 max-w-5xl mx-auto">
+      <div>
         <h1 className="text-4xl font-bold mb-4">Developer Guide</h1>
-        <p className="text-xl text-muted-foreground">
-           Extend NetworkLib and build high-performance applications.
+        <p className="text-xl text-slate-400">
+          Complete API reference for building high-performance applications.
         </p>
+      </div>
 
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">C++ API</h2>
-           <p className="text-muted-foreground">The core API relies on callbacks and lambdas.</p>
-
-           <CodeBlock
-              language="cpp"
-              filename="main.cpp"
-              code={`#include <networklib/core/server.h>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold text-white border-b border-slate-800 pb-2">C++ API Usage</h2>
+        <CodeBlock
+          lang="cpp"
+          code={`#include "network_lib.h"
 
 int main() {
-    networklib::Server server("config.yaml");
+    // Load configuration
+    Config config = Config::LoadFromFile("config/grpc_server.yaml");
 
-    server.OnConnect([](auto conn) {
-        std::cout << "New connection: " << conn->GetId() << std::endl;
+    // Create server
+    auto server = NetworkLib::CreateServer(config);
+
+    // Register stream handler
+    server->RegisterStreamHandler([](
+        const StreamEnvelope& request,
+        StreamEnvelope& response,
+        StreamContext& ctx
+    ) {
+        response.mutable_payload()->set_data(
+            ProcessData(request.payload().data())
+        );
+        return Status::OK;
     });
 
-    server.OnMessage([](auto conn, const auto& msg) {
-        conn->Send("Echo: " + msg);
-    });
-
-    server.Run();
+    server->Start();
+    return 0;
 }`}
-           />
-        </section>
+          filename="main.cpp"
+        />
+      </section>
 
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">Python Bindings</h2>
-           <p className="text-muted-foreground">Use the high-performance core with the ease of Python.</p>
-
-           <CodeBlock
-              language="python"
-              filename="server.py"
-              code={`import networklib
-
-def on_message(conn, msg):
-    conn.send(f"Echo: {msg}")
-
-server = networklib.Server("config.yaml")
-server.on_message(on_message)
-server.run()`}
-           />
-        </section>
-
-        <section className="space-y-4">
-           <h2 className="text-2xl font-semibold">Creating Custom Protocols</h2>
-           <p className="text-muted-foreground">
-              Implement the <code>ProtocolHandler</code> interface to add support for proprietary protocols.
-           </p>
-           <ul className="list-disc pl-6 text-muted-foreground">
-              <li>Override <code>OnRead</code> to parse raw bytes.</li>
-              <li>Override <code>OnWrite</code> to frame outgoing messages.</li>
-              <li>Register via <code>server.RegisterProtocol("my-proto", factory)</code>.</li>
-           </ul>
-        </section>
-      </div>
-    </PageTransition>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold text-white border-b border-slate-800 pb-2">VSCode Debugging</h2>
+        <p className="text-slate-400">Debugging is supported via Docker and Remote Containers.</p>
+        <CodeBlock
+          lang="json"
+          code={`{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Docker - Server",
+      "type": "cppdbg",
+      "request": "attach",
+      "program": "/usr/local/bin/network-server",
+      "miDebuggerServerAddress": "localhost:2345",
+      "sourceFileMap": { "/build": "\${workspaceFolder}" }
+    }
+  ]
+}`}
+          filename=".vscode/launch.json"
+        />
+      </section>
+    </div>
   );
 }
