@@ -24,6 +24,7 @@ using namespace networklib;
 
 void RunServer(int port, bool& running) {
     auto loop = std::make_unique<core::event::EventLoop>();
+    loop->Init();
     core::event::Reactor reactor(std::move(loop));
     auto handler = std::make_shared<protocols::http::HttpHandler>();
     
@@ -80,6 +81,7 @@ int main() {
         // Or we use a loop with timeout.
         // For Phase 5 test, we'll just run the reactor.
         auto loop = std::make_unique<core::event::EventLoop>();
+        loop->Init();
         core::event::Reactor reactor(std::move(loop));
         auto handler = std::make_shared<protocols::http::HttpHandler>();
         reactor.RegisterServer(port, handler);

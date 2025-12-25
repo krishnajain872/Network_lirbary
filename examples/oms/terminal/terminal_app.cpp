@@ -42,6 +42,7 @@ void RunLoadTest(int client_count, int orders_per_client) {
     for (int i = 0; i < client_count; ++i) {
         threads.emplace_back([i, orders_per_client, &completed_clients]() {
             auto loop = std::make_shared<core::event::EventLoop>();
+            loop->Init();
             protocols::grpc::GrpcClient client(loop);
             if (!client.Connect("127.0.0.1", 50051)) {
                 std::cerr << "Client " << i << " failed to connect." << std::endl;
@@ -80,6 +81,7 @@ void RunLoadTest(int client_count, int orders_per_client) {
 
 int main(int argc, char** argv) {
     auto loop = std::make_shared<core::event::EventLoop>();
+    loop->Init();
     protocols::grpc::GrpcClient client(loop);
     
     std::string host = "127.0.0.1";

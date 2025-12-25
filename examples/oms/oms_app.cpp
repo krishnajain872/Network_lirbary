@@ -15,6 +15,7 @@ int main() {
     std::cout << "Starting OMS Reference Application..." << std::endl;
 
     auto loop = std::make_unique<core::event::EventLoop>();
+    loop->Init();
     core::event::Reactor reactor(std::move(loop));
 
     // 1. Market Data (UDP 9000)

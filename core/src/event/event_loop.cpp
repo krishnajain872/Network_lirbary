@@ -33,6 +33,9 @@ utils::Result<void> EventLoop::Init(PollerType type) {
 }
 
 utils::Result<void> EventLoop::AddFd(int fd, uint32_t events, std::function<void(uint32_t)> callback) {
+    if (!poller_) {
+        return utils::Result<void>::Failure(constants::errors::kNotInitialized, "EventLoop not initialized. Call Init() first.");
+    }
     auto handler = std::make_shared<EventHandler>(EventHandler{fd, events, callback});
     
     try {
@@ -46,6 +49,9 @@ utils::Result<void> EventLoop::AddFd(int fd, uint32_t events, std::function<void
 }
 
 utils::Result<void> EventLoop::ModifyFd(int fd, uint32_t events) {
+    if (!poller_) {
+        return utils::Result<void>::Failure(constants::errors::kNotInitialized, "EventLoop not initialized. Call Init() first.");
+    }
     if (handlers_.find(fd) == handlers_.end()) {
         return utils::Result<void>::Failure(constants::errors::kNotFound, "FD not found in loop");
     }
@@ -61,6 +67,7 @@ utils::Result<void> EventLoop::ModifyFd(int fd, uint32_t events) {
 }
 
 void EventLoop::RemoveFd(int fd) {
+    if (!poller_) return;
     if (handlers_.find(fd) != handlers_.end()) {
         poller_->Remove(fd);
         handlers_.erase(fd);
@@ -68,6 +75,10 @@ void EventLoop::RemoveFd(int fd) {
 }
 
 void EventLoop::Run() {
+    if (!poller_) {
+        std::cerr << "EventLoop::Run() called without Init()" << std::endl;
+        return;
+    }
     running_ = true;
     std::vector<Event> events;
     events.reserve(128);

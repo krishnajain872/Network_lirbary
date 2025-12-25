@@ -51,6 +51,9 @@ inline constexpr ErrorCode kConfigError = 400;
 inline constexpr ErrorCode kInvalidConfig = 401;
 inline constexpr ErrorCode kMissingConfig = 402;
 
+// Runtime errors (500-599)
+inline constexpr ErrorCode kNotInitialized = 500;
+
 } // namespace errors
 } // namespace constants
 } // namespace networklib

@@ -96,6 +96,7 @@ RUN apt-get update && apt-get install -y \
     libprotobuf23 \
     libgrpc++1 \
     libyaml-cpp0.7 \
+    liburing2 \
     ca-certificates \
     bash \
     && rm -rf /var/lib/apt/lists/*
