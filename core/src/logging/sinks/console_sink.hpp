@@ -31,13 +31,13 @@ private:
 
     const char* LogLevelToString(LogLevel level) {
         switch (level) {
-            case LogLevel::TRACE: return "TRACE";
-            case LogLevel::DEBUG: return "DEBUG";
-            case LogLevel::INFO: return "INFO";
-            case LogLevel::WARN: return "WARN";
-            case LogLevel::ERROR: return "ERROR";
-            case LogLevel::FATAL: return "FATAL";
-            case LogLevel::CRITICAL: return "CRITICAL";
+            case LogLevel::Trace: return "TRACE";
+            case LogLevel::Debug: return "DEBUG";
+            case LogLevel::Info: return "INFO";
+            case LogLevel::Warn: return "WARN";
+            case LogLevel::Error: return "ERROR";
+            case LogLevel::Fatal: return "FATAL";
+            case LogLevel::Critical: return "CRITICAL";
             default: return "UNKNOWN";
         }
     }

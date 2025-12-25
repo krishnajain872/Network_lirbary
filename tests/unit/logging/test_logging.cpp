@@ -8,7 +8,7 @@
 using namespace networklib::logging;
 
 TEST(LoggingTest, Initialization) {
-    EXPECT_TRUE(Logger::Initialize("appname=TestApp;console=true;severity=DEBUG"));
+    EXPECT_TRUE(Logger::Initialize("appname=TestApp;console=true;severity=Debug"));
     Logger::Deinitialize();
 }
 
@@ -18,7 +18,7 @@ TEST(LoggingTest, FileLogging) {
         std::filesystem::remove(log_file);
     }
 
-    std::string config = "appname=FileTest;logfile=" + log_file + ";console=false;severity=INFO";
+    std::string config = "appname=FileTest;logfile=" + log_file + ";console=false;severity=Info";
     EXPECT_TRUE(Logger::Initialize(config.c_str()));
 
     LOG_INFO("This is an info message");

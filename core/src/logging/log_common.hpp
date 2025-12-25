@@ -54,7 +54,7 @@ struct LoggerConfig {
     bool rotation_compress = false;
 
     // Filtering
-    LogLevel severity = LogLevel::INFO;
+    LogLevel severity = LogLevel::Info;
 
     // Format
     std::string format = "text"; // text, json, structured
