@@ -21,7 +21,7 @@ int main() {
 
     auto server = NetworkLib::CreateServer(config);
 
-    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp) {
+    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
         std::cout << "[C++] Received Request: " << req.header().message_type() << std::endl;
 
         // Echo back

@@ -11,7 +11,28 @@ namespace networklib {
         struct ServerConfig;
         struct ClientConfig;
     }
-    class StreamEnvelope; // Forward declaration
+    class StreamEnvelope;
+
+    /**
+     * @brief Context for a stream, allowing asynchronous writes and state management.
+     */
+    class IStreamContext {
+    public:
+        virtual ~IStreamContext() = default;
+
+        /**
+         * @brief Write a message to the stream.
+         * @param msg The message to send.
+         */
+        virtual void Write(const StreamEnvelope& msg) = 0;
+
+        /**
+         * @brief Close the stream.
+         */
+        virtual void Close() = 0;
+
+        // TODO: Access Connection ID, Peer Info, etc.
+    };
 
     /**
      * @brief Interface for a Network Server.
@@ -20,34 +41,16 @@ namespace networklib {
     public:
         virtual ~IServer() = default;
 
-        /**
-         * @brief Starts the server (non-blocking).
-         * @return true if started successfully.
-         */
         virtual bool Start() = 0;
-
-        /**
-         * @brief Stops the server.
-         */
         virtual void Stop() = 0;
-
-        /**
-         * @brief Blocks until the server stops.
-         */
         virtual void Wait() = 0;
 
-        // Optional StreamHandler support
-        // Note: The user must include "networklib/protocols/proto/stream_envelope.pb.h" to use this.
-        using StreamHandler = std::function<void(const StreamEnvelope& req, StreamEnvelope& resp)>;
+        // Handler receives Request, Response (mutable), and Context (for streaming/async)
+        // If response is populated, it is sent after return.
+        // Context can be used for later writes (e.g. subscriptions).
+        using StreamHandler = std::function<void(const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx)>;
 
-        /**
-         * @brief Registers a generic StreamEnvelope handler.
-         * The library will adapt incoming protocol messages (HTTP, gRPC, TCP) to StreamEnvelope.
-         */
         virtual void RegisterStreamHandler(StreamHandler handler) = 0;
-
-        // Raw Handler support can be added via specific ProtocolHandler registration
-        // e.g., RegisterProtocolHandler(...)
     };
 
     /**
@@ -59,13 +62,11 @@ namespace networklib {
 
         virtual bool Connect() = 0;
         virtual void Disconnect() = 0;
-
-        // Send generic message (raw bytes)
         virtual bool Send(const std::string& data) = 0;
-
-        // Send StreamEnvelope (if supported)
-        // Note: Requires "networklib/protocols/proto/stream_envelope.pb.h"
         virtual bool Send(const StreamEnvelope& envelope) = 0;
+
+        using MessageHandler = std::function<void(const StreamEnvelope&)>;
+        virtual void RegisterMessageHandler(MessageHandler handler) = 0;
     };
 
     /**
@@ -73,23 +74,8 @@ namespace networklib {
      */
     class NetworkLib {
     public:
-        /**
-         * @brief Creates a Server instance based on configuration.
-         * @param config The server configuration.
-         * @return A shared pointer to the server interface.
-         */
         static std::shared_ptr<IServer> CreateServer(const config::ServerConfig& config);
-
-        /**
-         * @brief Creates a Server instance from a config file.
-         * @param config_path Path to the configuration file.
-         * @return A shared pointer to the server interface.
-         */
         static std::shared_ptr<IServer> CreateServer(const std::string& config_path);
-
-        /**
-         * @brief Creates a Client instance from a config file.
-         */
         static std::shared_ptr<IClient> CreateClient(const std::string& config_path);
     };
 

@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include "networklib/core/connection.h"
+#include "networklib/network_lib.h" // For IStreamContext
 
 // Forward decl
 namespace networklib { class StreamEnvelope; }
@@ -17,7 +18,7 @@ namespace protocols {
  */
 class ProtocolHandler {
 public:
-    using StreamHandler = std::function<void(const StreamEnvelope&, StreamEnvelope&)>;
+    using StreamHandler = networklib::IServer::StreamHandler;
 
     virtual ~ProtocolHandler() = default;
     

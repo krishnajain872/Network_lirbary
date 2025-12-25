@@ -55,6 +55,9 @@ public:
 
     void SetDisconnectCallback(const DisconnectCallback& cb) { disconnect_callback_ = cb; }
 
+    using MessageCallback = std::function<void(const Ptr&)>;
+    void SetMessageCallback(const MessageCallback& cb) { message_callback_ = cb; }
+
     // This needs to be public so ProtocolHandler can access it? 
     // Or better, ProtocolHandler methods take ConnectionPtr.
     // For Phase 5, we'll keep it simple.
@@ -80,6 +83,7 @@ private:
 
     std::any context_;
     DisconnectCallback disconnect_callback_;
+    MessageCallback message_callback_;
 };
 
 } // namespace core
