@@ -77,6 +77,12 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 # --------------------------------------------------
 # Core Sources
 # --------------------------------------------------
+set(LOGGING_SOURCES
+    core/src/logging/log_config.cpp
+    core/src/logging/async_logger.cpp
+    core/src/logging/logger.cpp
+)
+
 set(CORE_SOURCES
     core/src/event/event_loop.cpp
     core/src/event/socket.cpp
@@ -114,6 +120,7 @@ set(CORE_SOURCES
     core/src/observability/tracing/otlp_exporter.cpp
     core/src/event/udp_socket.cpp
     core/src/protocols/udp/udp_handler.cpp
+    ${LOGGING_SOURCES}
     ${PROTO_SRCS}
 )
 
@@ -141,6 +148,7 @@ target_precompile_headers(networklib PRIVATE
 
 target_include_directories(networklib PUBLIC
     core/include
+    core/include/networklib/external
     ${CMAKE_CURRENT_BINARY_DIR} # Generated protobuf headers
     ${Protobuf_INCLUDE_DIRS}
     ${OPENSSL_INCLUDE_DIR}
@@ -154,6 +162,7 @@ target_link_libraries(networklib PUBLIC
     yaml-cpp
     uring
 )
+
 
 install(TARGETS networklib
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -411,6 +420,18 @@ add_executable(memory_benchmark
 target_link_libraries(memory_benchmark networklib)
 
 install(TARGETS memory_benchmark
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Logging Test
+add_executable(test_logging
+    tests/unit/logging/test_logging.cpp
+)
+target_link_libraries(test_logging
+    networklib
+    GTest::gtest_main
+)
+install(TARGETS test_logging
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
