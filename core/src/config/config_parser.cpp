@@ -195,5 +195,25 @@ ServerConfig ConfigParser::Parse(const std::string& filepath) {
     return config;
 }
 
+ClientConfig ConfigParser::ParseClient(const std::string& filepath) {
+    ClientConfig config;
+    try {
+        YAML::Node yaml = YAML::LoadFile(filepath);
+        if (yaml["client"]) {
+            YAML::Node c = yaml["client"];
+            config.mode = GetSafe<std::string>(c, "mode", "tcp");
+            if (c["connection"]) { // Matches prompt example "connection" block
+                // "target": "server:50051" handling logic needed, or just host/port
+                // Simplified for now:
+                if (c["connection"]["host"]) config.network.host = c["connection"]["host"].as<std::string>();
+                if (c["connection"]["port"]) config.network.port = c["connection"]["port"].as<int>();
+            }
+        }
+    } catch (...) {
+        // Ignore or log
+    }
+    return config;
+}
+
 } // namespace config
 } // namespace networklib

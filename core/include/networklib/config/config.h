@@ -278,9 +278,19 @@ struct ServerConfig {
     ObservabilityConfig observability;
 };
 
+struct ClientConfig {
+    std::string mode = "tcp";
+    struct {
+        std::string host = "127.0.0.1";
+        int port = 80;
+    } network;
+    // Add more fields as needed
+};
+
 class ConfigParser {
 public:
     static ServerConfig Parse(const std::string& filepath);
+    static ClientConfig ParseClient(const std::string& filepath);
 };
 
 } // namespace config
