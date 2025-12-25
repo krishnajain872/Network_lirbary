@@ -1,6 +1,9 @@
 #include "networklib/core/event/event_loop.h"
 #include "networklib/core/event/epoll_poller.h"
 #include "networklib/core/event/io_uring_poller.h"
+#include <sys/eventfd.h>
+#include <unistd.h>
+#include <iostream>
 #include "networklib/constants/errors.h"
 #include <iostream>
 #include <cstring>
@@ -10,10 +13,13 @@ namespace networklib {
 namespace core {
 namespace event {
 
-EventLoop::EventLoop() : running_(false) {}
+EventLoop::EventLoop() : running_(false), wakeup_fd_(-1), thread_id_(std::this_thread::get_id()) {}
 
 EventLoop::~EventLoop() {
     Stop();
+    if (wakeup_fd_ >= 0) {
+        close(wakeup_fd_);
+    }
 }
 
 utils::Result<void> EventLoop::Init(PollerType type) {
@@ -29,6 +35,18 @@ utils::Result<void> EventLoop::Init(PollerType type) {
             std::string("Failed to initialize poller: ") + e.what()
         );
     }
+
+    // Create Wakeup FD
+    wakeup_fd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (wakeup_fd_ < 0) {
+        return utils::Result<void>::Failure(constants::errors::kInternal, "Failed to create eventfd");
+    }
+
+    // Register Wakeup FD
+    AddFd(wakeup_fd_, EPOLLIN, [this](uint32_t) {
+        HandleRead();
+    });
+
     return utils::Result<void>::Success();
 }
 
@@ -111,6 +129,49 @@ void EventLoop::Run() {
 
 void EventLoop::Stop() {
     running_ = false;
+    WakeUp();
+}
+
+void EventLoop::RunInLoop(std::function<void()> task) {
+    if (IsInLoopThread()) {
+        task();
+    } else {
+        QueueInLoop(std::move(task));
+    }
+}
+
+void EventLoop::QueueInLoop(std::function<void()> task) {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        pending_tasks_.push_back(std::move(task));
+    }
+    WakeUp();
+}
+
+void EventLoop::WakeUp() {
+    uint64_t one = 1;
+    ssize_t n = write(wakeup_fd_, &one, sizeof(one));
+    (void)n;
+}
+
+void EventLoop::HandleRead() {
+    uint64_t one;
+    ssize_t n = read(wakeup_fd_, &one, sizeof(one));
+    (void)n;
+
+    std::vector<std::function<void()>> tasks;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        tasks.swap(pending_tasks_);
+    }
+
+    for (const auto& task : tasks) {
+        task();
+    }
+}
+
+bool EventLoop::IsInLoopThread() const {
+    return thread_id_ == std::this_thread::get_id();
 }
 
 } // namespace event

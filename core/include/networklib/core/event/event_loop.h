@@ -6,6 +6,9 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <mutex>
+#include <queue>
+#include <thread>
 
 #include "networklib/utils/result.h"
 #include "networklib/core/event/poller.h"
@@ -62,10 +65,22 @@ public:
     utils::Result<void> ModifyFd(int fd, uint32_t events);
     void RemoveFd(int fd);
 
+    void RunInLoop(std::function<void()> task);
+    bool IsInLoopThread() const;
+
 private:
+    void WakeUp();
+    void HandleRead();
+    void QueueInLoop(std::function<void()> task);
+
     std::unique_ptr<Poller> poller_;
     bool running_;
     std::map<int, std::shared_ptr<EventHandler>> handlers_; 
+
+    int wakeup_fd_;
+    std::thread::id thread_id_;
+    std::mutex mutex_;
+    std::vector<std::function<void()>> pending_tasks_;
 };
 
 } // namespace event
