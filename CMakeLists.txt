@@ -92,6 +92,7 @@ set(CORE_SOURCES
     core/src/connection.cpp
     core/src/server.cpp
     core/src/client.cpp
+    core/src/client/protocols/client_protocol.cpp
     core/src/network_lib.cpp
     core/src/security/tls_context.cpp
     core/src/protocols/protocol_factory.cpp
