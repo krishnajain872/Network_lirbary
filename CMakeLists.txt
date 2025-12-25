@@ -5,6 +5,44 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # --------------------------------------------------
+# Optimizations & Build Modes
+# --------------------------------------------------
+# 1. CCache Support
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
+# 2. Build Types (Debug, Release, ASan)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "ASan")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+set(CMAKE_CXX_FLAGS_ASAN "-O1 -g -fsanitize=address -fno-omit-frame-pointer -DDEBUG")
+set(CMAKE_EXE_LINKER_FLAGS_ASAN "-fsanitize=address")
+set(CMAKE_SHARED_LINKER_FLAGS_ASAN "-fsanitize=address")
+set(CMAKE_MODULE_LINKER_FLAGS_ASAN "-fsanitize=address")
+
+# 3. Interprocedural Optimization (LTO)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result OUTPUT output)
+if(result AND "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+# 4. Unity Build (Jumbo Build) - Optional
+option(ENABLE_UNITY_BUILD "Enable Unity Build (faster compilation)" OFF)
+if(ENABLE_UNITY_BUILD)
+    set(CMAKE_UNITY_BUILD ON)
+endif()
+
+# --------------------------------------------------
 # Install directories (BEST PRACTICE)
 # --------------------------------------------------
 include(GNUInstallDirs)
@@ -82,6 +120,21 @@ set(CORE_SOURCES
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 add_library(networklib ${CORE_SOURCES})
+
+# Optimization: Precompiled Headers
+target_precompile_headers(networklib PRIVATE
+    <vector>
+    <string>
+    <memory>
+    <map>
+    <thread>
+    <mutex>
+    <atomic>
+    <iostream>
+    <functional>
+    <cstring>
+    <algorithm>
+)
 
 target_include_directories(networklib PUBLIC
     core/include
