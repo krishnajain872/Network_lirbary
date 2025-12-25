@@ -37,7 +37,8 @@ void IoUringPoller::Remove(int fd) {
     // Use POLL_REMOVE based on user_data logic or fd match
     // Simplified for this architecture: We are cancelling pending polls for this FD
     // liburing < 2.2 uses void*, >= 2.2 uses __u64
-#if defined(IO_URING_VERSION_MAJOR) && (IO_URING_VERSION_MAJOR < 2 || (IO_URING_VERSION_MAJOR == 2 && IO_URING_VERSION_MINOR < 2))
+    // If version macros are missing, assume old version (void*)
+#if !defined(IO_URING_VERSION_MAJOR) || (IO_URING_VERSION_MAJOR < 2) || (IO_URING_VERSION_MAJOR == 2 && IO_URING_VERSION_MINOR < 2)
     io_uring_prep_poll_remove(sqe, (void*)(intptr_t)fd);
 #else
     io_uring_prep_poll_remove(sqe, (__u64)fd);
