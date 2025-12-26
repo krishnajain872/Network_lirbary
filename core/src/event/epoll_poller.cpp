@@ -1,5 +1,5 @@
 #include "networklib/core/event/epoll_poller.h"
-#include "networklib/logger.h"
+#include "networklib/network_lib.h"
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <stdexcept>

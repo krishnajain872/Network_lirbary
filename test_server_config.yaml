@@ -1,0 +1,5 @@
+server:
+  protocol: grpc
+  port: 9090
+logging:
+  level: info

@@ -1,6 +1,6 @@
 #include "networklib/core/client.h"
 #include "stream_envelope.pb.h"
-#include "networklib/logger.h"
+#include "networklib/network_lib.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>

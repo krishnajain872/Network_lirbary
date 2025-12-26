@@ -8,54 +8,101 @@ include(BuildOptions)
 include(Dependencies)
 include(Helpers)
 
+# ==============================================================================
+# PROTOCOL BUFFERS
+# ==============================================================================
 file(GLOB PROTO_FILES protocols/proto/*.proto)
+if(TARGET protobuf::protoc)
+    set(protobuf_PROTOC_EXE protobuf::protoc)
+else()
+    set(protobuf_PROTOC_EXE ${Protobuf_PROTOC_EXECUTABLE})
+endif()
+
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
+# ==============================================================================
+# CORE SOURCES
+# ==============================================================================
 file(GLOB_RECURSE CORE_SOURCES core/src/*.cpp)
 list(FILTER CORE_SOURCES EXCLUDE REGEX "core/src/server_main.cpp")
+list(FILTER CORE_SOURCES EXCLUDE REGEX "core/src/event/io_uring_poller.cpp")
 
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+# ==============================================================================
+# MAIN LIBRARY (libnetwork.so)
+# ==============================================================================
+add_library(network SHARED ${CORE_SOURCES} ${PROTO_SRCS})
 
-add_library(networklib ${CORE_SOURCES} ${PROTO_SRCS})
-
-target_precompile_headers(networklib PRIVATE
+target_precompile_headers(network PRIVATE
     <vector> <string> <memory> <map>
     <thread> <mutex> <atomic>
     <functional> <algorithm>
 )
 
-target_include_directories(networklib PUBLIC
+target_include_directories(network PUBLIC
     core/include
+    core/include/networklib
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${Protobuf_INCLUDE_DIR}
 )
 
-target_link_libraries(networklib PUBLIC
+target_link_libraries(network PUBLIC
     network_options
     ${Protobuf_LIBRARIES}
     OpenSSL::SSL
     OpenSSL::Crypto
     yaml-cpp
-    uring
 )
 
-install(TARGETS networklib
+install(TARGETS network
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-add_network_exec(network-server core/src/server_main.cpp)
+# ==============================================================================
+# APPLICATIONS
+# ==============================================================================
 
-add_network_exec(generic_server examples/generic_server/main.cpp)
-add_network_exec(generic_client examples/generic_client/main.cpp)
-add_network_exec(logging_example examples/logging/logging_example.cpp)
+# OMS Server
+add_executable(oms_server oms_server/main.cpp)
+target_link_libraries(oms_server PRIVATE network)
+target_include_directories(oms_server PRIVATE core/include/networklib oms_server/proto)
 
-add_network_exec(oms_app examples/oms/oms_app.cpp)
-add_network_exec(oms_load_test examples/oms/load_test.cpp)
-add_network_exec(oms_terminal examples/oms/terminal/terminal_app.cpp)
+# OMS Client
+add_executable(oms_client
+    oms_client/main.cpp
+    oms_client/scenarios/order_placement.cpp
+    oms_client/scenarios/market_data_consumer.cpp
+)
+target_link_libraries(oms_client PRIVATE network)
+target_include_directories(oms_client PRIVATE core/include/networklib)
 
-include(Tests)
-add_subdirectory(tests/performance)
+# ==============================================================================
+# TESTS
+# ==============================================================================
+enable_testing()
 
-pybind11_add_module(networklib_py bindings/python/networklib_py.cpp)
-target_link_libraries(networklib_py PRIVATE networklib network_options)
-install(TARGETS networklib_py LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# Unit Tests
+file(GLOB UNIT_TEST_SRCS tests/unit/*.cpp)
+if(UNIT_TEST_SRCS)
+    add_executable(unit_tests ${UNIT_TEST_SRCS})
+    target_link_libraries(unit_tests PRIVATE network GTest::gtest_main)
+    target_include_directories(unit_tests PRIVATE core/include/networklib)
+    add_test(NAME UnitTests COMMAND unit_tests)
+endif()
+
+# Integration Tests
+file(GLOB INTEGRATION_TEST_SRCS tests/integration/*.cpp)
+if(INTEGRATION_TEST_SRCS)
+    add_executable(integration_tests ${INTEGRATION_TEST_SRCS})
+    target_link_libraries(integration_tests PRIVATE network GTest::gtest_main)
+    target_include_directories(integration_tests PRIVATE core/include/networklib)
+    add_test(NAME IntegrationTests COMMAND integration_tests)
+endif()
+
+# Performance Tests
+file(GLOB PERFORMANCE_TEST_SRCS tests/performance/*.cpp)
+if(PERFORMANCE_TEST_SRCS)
+    add_executable(performance_tests ${PERFORMANCE_TEST_SRCS})
+    target_link_libraries(performance_tests PRIVATE network GTest::gtest_main)
+    target_include_directories(performance_tests PRIVATE core/include/networklib)
+endif()

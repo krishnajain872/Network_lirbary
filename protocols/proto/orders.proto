@@ -1,0 +1,70 @@
+syntax = "proto3";
+package networklib.oms;
+
+enum Side {
+  SIDE_UNKNOWN = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNKNOWN = 0;
+  LIMIT = 1;
+  MARKET = 2;
+  STOP_LOSS = 3;
+  STOP_LIMIT = 4;
+}
+
+enum TimeInForce {
+  TIF_UNKNOWN = 0;
+  GTC = 1; // Good Till Cancel
+  IOC = 2; // Immediate or Cancel
+  FOK = 3; // Fill or Kill
+}
+
+enum OrderStatus {
+  STATUS_UNKNOWN = 0;
+  NEW = 1;
+  PARTIALLY_FILLED = 2;
+  FILLED = 3;
+  CANCELED = 4;
+  REJECTED = 5;
+  PENDING_CANCEL = 6;
+  PENDING_NEW = 7;
+}
+
+message Order {
+  string order_id = 1;
+  string symbol = 2;
+  OrderType type = 3;
+  Side side = 4;
+  double price = 5;
+  int64 quantity = 6;
+  int64 timestamp = 7;
+  string client_order_id = 8;
+  TimeInForce time_in_force = 9;
+  string account_id = 10;
+}
+
+message OrderResponse {
+  string order_id = 1;
+  string client_order_id = 2;
+  OrderStatus status = 3;
+  string message = 4;
+  double executed_price = 5;
+  int64 executed_quantity = 6;
+  int64 remaining_quantity = 7;
+}
+
+message OrderModify {
+  string order_id = 1;
+  string client_order_id = 2;
+  double new_price = 3;
+  int64 new_quantity = 4;
+}
+
+message OrderCancel {
+  string order_id = 1;
+  string client_order_id = 2;
+  string symbol = 3;
+}

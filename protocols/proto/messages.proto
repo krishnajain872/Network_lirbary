@@ -1,0 +1,22 @@
+syntax = "proto3";
+package networklib.oms;
+
+enum EventType {
+    UNKNOWN = 0;
+    ORDER_NEW = 1;
+    ORDER_FILLED = 2;
+    ORDER_CANCELLED = 3;
+    MARKET_DATA_UPDATE = 4;
+    SYSTEM_CONNECT = 5;
+    SYSTEM_DISCONNECT = 6;
+    SYSTEM_ERROR = 7;
+}
+
+message Event {
+    EventType type = 1;
+    string connection_id = 2;
+    bytes data = 3;
+    int64 timestamp_us = 4;
+    int32 error_code = 5;
+    string error_message = 6;
+}

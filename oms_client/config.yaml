@@ -1,0 +1,11 @@
+client:
+  mode: "tcp"
+  connection:
+    host: "127.0.0.1"
+    port: 8080
+  ssl:
+    enabled: false
+
+logging:
+  level: "info"
+  output: "console"
