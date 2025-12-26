@@ -123,7 +123,23 @@ void EventLoop::Run() {
         }
 
         for (const auto& ev : events) {
-            EventHandler* handler = static_cast<EventHandler*>(ev.data);
+            EventHandler* raw_handler = static_cast<EventHandler*>(ev.data);
+
+            // Fix: Extend lifetime of handler during callback execution
+            // We look up the shared_ptr in the map to ensure it's still valid and to hold a strong ref
+            // If the handler removes itself (e.g., HandleClose -> RemoveFd), this strong ref keeps it alive until return.
+
+            if (!raw_handler) continue;
+
+            int fd = raw_handler->fd;
+            auto it = handlers_.find(fd);
+            if (it == handlers_.end()) {
+                // Handler was removed by a previous event in this loop iteration?
+                continue;
+            }
+
+            std::shared_ptr<EventHandler> handler = it->second;
+
             if (handler && handler->callback) {
                 // Map generic event flags back to epoll-style constants expected by callbacks
                 // Currently our Poller impl maps 0x001->EPOLLIN etc implicitly in the callbacks usage

@@ -54,6 +54,7 @@ add_network_exec(oms_load_test examples/oms/load_test.cpp)
 add_network_exec(oms_terminal examples/oms/terminal/terminal_app.cpp)
 
 include(Tests)
+add_subdirectory(tests/performance)
 
 pybind11_add_module(networklib_py bindings/python/networklib_py.cpp)
 target_link_libraries(networklib_py PRIVATE networklib network_options)
