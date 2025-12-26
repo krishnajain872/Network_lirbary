@@ -19,6 +19,7 @@
 #include "networklib/protocols/http/http_handler.h"
 #include "networklib/core/event/event_loop.h"
 #include "networklib/config/config.h"
+#include "networklib/logger.h"
 
 using namespace networklib;
 
@@ -71,6 +72,7 @@ void ClientThread(int port, bool& success) {
 }
 
 int main() {
+    networklib::logging::Logger::Initialize("severity=Debug;console=true");
     int port = 8081;
     bool success = false;
     bool server_running = true;

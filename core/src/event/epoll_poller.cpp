@@ -1,4 +1,5 @@
 #include "networklib/core/event/epoll_poller.h"
+#include "networklib/logger.h"
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <stdexcept>
@@ -33,6 +34,7 @@ void EpollPoller::Add(int fd, uint32_t events, void* data) {
     if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &ev) == -1) {
         throw std::runtime_error(std::string("epoll_ctl add failed: ") + std::strerror(errno));
     }
+    LOG(Trace, "Epoll Add fd=%d events=%u", fd, events);
 }
 
 void EpollPoller::Modify(int fd, uint32_t events, void* data) {
@@ -45,10 +47,15 @@ void EpollPoller::Modify(int fd, uint32_t events, void* data) {
     if (epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, fd, &ev) == -1) {
         throw std::runtime_error("epoll_ctl mod failed");
     }
+    LOG(Trace, "Epoll Modify fd=%d events=%u", fd, events);
 }
 
 void EpollPoller::Remove(int fd) {
-    epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr);
+    if (epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr) == -1) {
+         LOG(Debug, "epoll_ctl del failed for fd=%d: %s", fd, strerror(errno));
+    } else {
+         LOG(Trace, "Epoll Remove fd=%d", fd);
+    }
 }
 
 int EpollPoller::Poll(std::vector<Event>& active_events, int timeout_ms) {

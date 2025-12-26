@@ -49,7 +49,7 @@ public:
         if ((fmt) && \
             networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::level)) { \
             _Pragma("GCC diagnostic push") \
-            _Pragma("GCC diagnostic error \"-Wformat\"") \
+            _Pragma("GCC diagnostic ignored \"-Wformat-security\"") \
             networklib::logging::Logger::Log(networklib::logging::LogLevel::level, \
                 __FILE__, __LINE__, __FUNCTION__, (fmt), ##__VA_ARGS__); \
             _Pragma("GCC diagnostic pop") \
