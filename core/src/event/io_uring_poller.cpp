@@ -1,4 +1,5 @@
 #include "networklib/core/event/io_uring_poller.h"
+#include "networklib/logger.h"
 #include <stdexcept>
 #include <cstring>
 #include <iostream>
@@ -10,6 +11,7 @@ namespace event {
 
 IoUringPoller::IoUringPoller(int queue_size) : queue_size_(queue_size) {
     if (io_uring_queue_init(queue_size_, &ring_, 0) < 0) {
+        LOG(Fatal, "Failed to initialize io_uring: %s", strerror(errno));
         throw std::runtime_error("Failed to initialize io_uring");
     }
 }
@@ -20,6 +22,7 @@ IoUringPoller::~IoUringPoller() {
 
 void IoUringPoller::Add(int fd, uint32_t events, void* data) {
     SubmitPoll(fd, events, data, IORING_OP_POLL_ADD);
+    LOG(Trace, "io_uring add fd=%d events=%u", fd, events);
 }
 
 void IoUringPoller::Modify(int fd, uint32_t events, void* data) {
@@ -28,11 +31,15 @@ void IoUringPoller::Modify(int fd, uint32_t events, void* data) {
     // Ideally we would use IORING_POLL_ADD_MULTI
     Remove(fd);
     Add(fd, events, data);
+    LOG(Trace, "io_uring modify fd=%d events=%u", fd, events);
 }
 
 void IoUringPoller::Remove(int fd) {
     struct io_uring_sqe* sqe = io_uring_get_sqe(&ring_);
-    if (!sqe) return;
+    if (!sqe) {
+        LOG(Error, "io_uring_get_sqe failed for Remove fd=%d", fd);
+        return;
+    }
 
     // Use POLL_REMOVE based on user_data logic or fd match
     // Simplified for this architecture: We are cancelling pending polls for this FD
@@ -44,6 +51,7 @@ void IoUringPoller::Remove(int fd) {
     io_uring_prep_poll_remove(sqe, (__u64)fd);
 #endif
     io_uring_submit(&ring_);
+    LOG(Trace, "io_uring remove fd=%d", fd);
 }
 
 void IoUringPoller::SubmitPoll(int fd, uint32_t events, void* data, int /*op*/) {

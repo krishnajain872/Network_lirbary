@@ -74,6 +74,7 @@ void Server::Init() {
         auto res = reactor_->RegisterServer(config_.network.port, handler, tls_ctx);
         if (!res) throw std::runtime_error(res.GetError().Message());
     }
+    LOG(Info, "Server initialized: %s mode on port %d", config_.mode.c_str(), config_.network.port);
 }
 
 void Server::RegisterStreamHandler(StreamHandler handler) {
@@ -99,7 +100,7 @@ bool Server::Start() {
         });
         return true;
     } catch (const std::exception& e) {
-        logging::Logger::Log(logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, "Server start failed: %s", e.what());
+        LOG(Error, "Server start failed: %s", e.what());
         return false;
     }
 }

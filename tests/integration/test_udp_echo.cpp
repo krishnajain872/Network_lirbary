@@ -9,10 +9,12 @@
 #include "networklib/core/event/reactor.h"
 #include "networklib/core/event/event_loop.h"
 #include "networklib/protocols/udp/udp_handler.h"
+#include "networklib/logger.h"
 
 using namespace networklib;
 
 int main() {
+    networklib::logging::Logger::Initialize("severity=Debug;console=true");
     int port = 9092;
     auto loop = std::make_unique<core::event::EventLoop>();
     loop->Init();

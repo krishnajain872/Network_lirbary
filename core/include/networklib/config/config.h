@@ -291,6 +291,7 @@ class ConfigParser {
 public:
     static ServerConfig Parse(const std::string& filepath);
     static ClientConfig ParseClient(const std::string& filepath);
+    static std::string GenerateLoggerConfig(const LoggingConfig& config);
 };
 
 } // namespace config

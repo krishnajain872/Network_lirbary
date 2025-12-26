@@ -8,10 +8,10 @@ using namespace networklib::logging;
 void RunWithConfig(const char* name, const char* config) {
     std::cout << "\n--- Running " << name << " ---" << std::endl;
     if (Logger::Initialize(config)) {
-        LOG_INFO("Logger initialized with config: %s", config);
-        LOG_DEBUG("This is a debug message");
-        LOG_WARN("This is a warning message");
-        LOG_ERROR("This is an error message");
+        LOG(Info, "Logger initialized with config: %s", config);
+        LOG(Debug, "This is a debug message");
+        LOG(Warn, "This is a warning message");
+        LOG(Error, "This is an error message");
 
         // Simulate work
         std::this_thread::sleep_for(std::chrono::milliseconds(100));

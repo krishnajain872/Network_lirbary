@@ -17,13 +17,16 @@ int main(int /*argc*/, char** /*argv*/) {
 
     NetworkLib::InitializeLogger("appname=GenericServer;console=true;severity=Info");
 
+    std::string mode = "tcp"; // Default
+    if (argc > 1) mode = argv[1];
+
     // Create Config manually
     config::ServerConfig config;
     std::string mode = "tcp"; // Default
     config.mode = mode;
     config.network.port = 8091;
 
-    std::cout << "Starting C++ Generic Server (" << mode << ") on 8091..." << std::endl;
+    LOG(Info, "Starting C++ Generic Server (%s) on 8091...", mode.c_str());
 
     auto server = NetworkLib::CreateServer(config);
 
@@ -39,7 +42,7 @@ int main(int /*argc*/, char** /*argv*/) {
         server->Stop();
     };
 
-    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Starting C++ Generic Server on 8091...");
+    LOG(Info, "Starting C++ Generic Server on 8091...");
     if (server->Start()) {
         server->Wait();
     }

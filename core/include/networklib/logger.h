@@ -49,16 +49,9 @@ public:
         if ((fmt) && \
             networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::level)) { \
             _Pragma("GCC diagnostic push") \
-            _Pragma("GCC diagnostic error \"-Wformat\"") \
+            _Pragma("GCC diagnostic ignored \"-Wformat-security\"") \
             networklib::logging::Logger::Log(networklib::logging::LogLevel::level, \
                 __FILE__, __LINE__, __FUNCTION__, (fmt), ##__VA_ARGS__); \
             _Pragma("GCC diagnostic pop") \
         } \
     } while(0)
-
-#define LOG_TRACE(fmt, ...) LOG(Trace, fmt, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) LOG(Debug, fmt, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...)  LOG(Info, fmt, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...)  LOG(Warn, fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) LOG(Error, fmt, ##__VA_ARGS__)
-#define LOG_FATAL(fmt, ...) LOG(Fatal, fmt, ##__VA_ARGS__)
