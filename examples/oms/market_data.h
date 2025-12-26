@@ -11,7 +11,7 @@ using namespace networklib::protocols::udp;
 
 class MarketDataHandler : public UdpHandler {
 public:
-    void OnPacket(int fd, const char* data, size_t len, const std::string& source_ip, int source_port) override {
+    void OnPacket(int /*fd*/, const char* data, size_t len, const std::string& /*source_ip*/, int /*source_port*/) override {
         // Format: "SYMBOL PRICE" (e.g., "AAPL 150.50")
         std::string msg(data, len);
         std::stringstream ss(msg);

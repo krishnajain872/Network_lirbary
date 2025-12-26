@@ -10,7 +10,7 @@ namespace client {
 
 class TcpClientProtocol : public IClientProtocol {
 public:
-    void OnConnect(const std::shared_ptr<Connection>& conn) override {}
+    void OnConnect(const std::shared_ptr<Connection>& /*conn*/) override {}
 
     void Send(const std::shared_ptr<Connection>& conn, const StreamEnvelope& envelope) override {
         conn->Send(envelope.SerializeAsString());

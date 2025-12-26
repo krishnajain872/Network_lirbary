@@ -54,7 +54,7 @@ void IoUringPoller::Remove(int fd) {
     LOG(Trace, "io_uring remove fd=%d", fd);
 }
 
-void IoUringPoller::SubmitPoll(int fd, uint32_t events, void* data, int op) {
+void IoUringPoller::SubmitPoll(int fd, uint32_t events, void* data, int /*op*/) {
     struct io_uring_sqe* sqe = io_uring_get_sqe(&ring_);
     if (!sqe) {
         // Queue full, simplistic handling

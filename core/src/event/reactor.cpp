@@ -57,7 +57,6 @@ utils::Result<void> Reactor::RegisterServer(int port,
                 // We need IP to rate limit per IP.
                 
                 std::string client_ip;
-                int client_port = 0;
                 
                 // We need an Accept variant that returns IP
                 // Socket::Accept just returns int.

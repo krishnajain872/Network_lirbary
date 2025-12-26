@@ -53,7 +53,7 @@ private:
     core::Connection::Ptr conn_;
 };
 
-void WebSocketHandler::OnConnection(const core::Connection::Ptr& conn) {
+void WebSocketHandler::OnConnection(const core::Connection::Ptr& /*conn*/) {
     is_upgraded_ = false;
 }
 

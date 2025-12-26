@@ -17,7 +17,7 @@ using namespace networklib;
 // Market Feed Logic
 class MarketFeed {
 public:
-    void HandleSubscription(const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
+    void HandleSubscription(const StreamEnvelope& /*req*/, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
         std::cout << "[Feed] New subscriber" << std::endl;
         {
             std::lock_guard<std::mutex> lock(mutex_);
