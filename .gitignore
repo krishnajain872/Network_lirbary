@@ -7,7 +7,7 @@ node_modules/
 .next/
 dist/
 target/
-build_Debug/
-build_Release/
-build_Asan/
-build_Unity/
+build-Debug/
+build-Release/
+build-Asan/
+build-Unity/

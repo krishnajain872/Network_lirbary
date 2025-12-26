@@ -44,30 +44,14 @@ public:
 } // namespace networklib
 
 // Convenience Macros
-#define LOG_TRACE(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Trace)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Trace, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_DEBUG(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Debug)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Debug, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_INFO(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Info)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_WARN(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Warn)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Warn, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_ERROR(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Error)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_FATAL(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Fatal)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Fatal, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
-
-#define LOG_CRITICAL(fmt, ...) \
-    if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Critical)) \
-        networklib::logging::Logger::Log(networklib::logging::LogLevel::Critical, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define LOG(level, fmt, ...) \
+    do { \
+        if ((fmt) && \
+            networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::level)) { \
+            _Pragma("GCC diagnostic push") \
+            _Pragma("GCC diagnostic error \"-Wformat\"") \
+            networklib::logging::Logger::Log(networklib::logging::LogLevel::level, \
+                __FILE__, __LINE__, __FUNCTION__, (fmt), ##__VA_ARGS__); \
+            _Pragma("GCC diagnostic pop") \
+        } \
+    } while(0)

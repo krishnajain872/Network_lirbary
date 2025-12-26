@@ -1,0 +1,5 @@
+function(add_network_exec name)
+    add_executable(${name} ${ARGN})
+    target_link_libraries(${name} PRIVATE networklib network_options)
+    install(TARGETS ${name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endfunction()

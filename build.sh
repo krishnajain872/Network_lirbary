@@ -34,9 +34,17 @@ echo "🔧 Build Type: ${BUILD_TYPE}"
 echo "📁 Build Dir : ${BUILD_DIR}"
 echo ""
 
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
+# 🔥 Clean existing build directory
+if [ -d "${BUILD_DIR}" ]; then
+  echo "🧹 Removing existing build directory..."
+  rm -rf "${BUILD_DIR}"
+fi
 
+# 📁 Create fresh build directory
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+
+echo "⚙️ Configuring CMake..."
 cmake .. \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 
@@ -49,4 +57,4 @@ echo "📦 Installing..."
 cmake --install .
 
 echo ""
-echo "✅ Build completed successfully!"
+echo "✅ Clean build completed successfully!"
