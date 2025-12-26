@@ -1,0 +1,31 @@
+server:
+  protocol: "grpc"
+  host: "0.0.0.0"
+  port: 8080
+  max_connections: 10000
+  thread_pool_size: 16
+
+  tls:
+    enabled: false
+    cert_path: "/path/to/cert.pem"
+    key_path: "/path/to/key.pem"
+
+  performance:
+    enable_zero_copy: true
+    buffer_size: 65536
+    keep_alive: true
+    tcp_nodelay: true
+
+logging:
+  level: "info"
+  output: "console"
+  file_path: "oms_server.log"
+  rotation:
+    max_size_mb: 100
+    max_files: 10
+  format: "text"
+
+communication:
+  mode: "event_driven"
+  serialization: "protobuf"
+  compression: true

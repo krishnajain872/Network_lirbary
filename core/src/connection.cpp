@@ -1,7 +1,7 @@
 #include "networklib/core/connection.h"
 #include "networklib/constants/limits.h"
 #include "networklib/core/observability/tracing/tracer.h"
-#include "networklib/logger.h"
+#include "networklib/network_lib.h"
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

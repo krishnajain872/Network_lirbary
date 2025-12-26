@@ -1,11 +1,11 @@
 #include "networklib/core/event/event_loop.h"
 #include "networklib/core/event/epoll_poller.h"
-#include "networklib/core/event/io_uring_poller.h"
+// #include "networklib/core/event/io_uring_poller.h" // REMOVED for dependency
 #include <sys/eventfd.h>
 #include <unistd.h>
 #include <iostream>
 #include "networklib/constants/errors.h"
-#include "networklib/logger.h"
+#include "networklib/network_lib.h"
 #include <iostream>
 #include <cstring>
 #include <sys/epoll.h>
@@ -26,7 +26,8 @@ EventLoop::~EventLoop() {
 utils::Result<void> EventLoop::Init(PollerType type) {
     try {
         if (type == PollerType::IO_URING) {
-            poller_ = std::make_unique<IoUringPoller>();
+             LOG_WARN("IO_URING requested but disabled/unavailable. Falling back to EPOLL.");
+             poller_ = std::make_unique<EpollPoller>();
         } else {
             poller_ = std::make_unique<EpollPoller>();
         }
@@ -40,7 +41,7 @@ utils::Result<void> EventLoop::Init(PollerType type) {
     // Create Wakeup FD
     wakeup_fd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (wakeup_fd_ < 0) {
-        LOG(Error, "Failed to create eventfd: %s", strerror(errno));
+        LOG_ERROR("Failed to create eventfd: %s", strerror(errno));
         return utils::Result<void>::Failure(constants::errors::kInternal, "Failed to create eventfd");
     }
 
@@ -49,13 +50,13 @@ utils::Result<void> EventLoop::Init(PollerType type) {
         HandleRead();
     });
 
-    LOG(Debug, "EventLoop initialized with %s poller", (type == PollerType::IO_URING ? "IO_URING" : "EPOLL"));
+    LOG_DEBUG("EventLoop initialized with EPOLL poller");
     return utils::Result<void>::Success();
 }
 
 utils::Result<void> EventLoop::AddFd(int fd, uint32_t events, std::function<void(uint32_t)> callback) {
     if (!poller_) {
-        LOG(Error, "EventLoop not initialized. Call Init() first.");
+        LOG_ERROR("EventLoop not initialized. Call Init() first.");
         return utils::Result<void>::Failure(constants::errors::kNotInitialized, "EventLoop not initialized. Call Init() first.");
     }
     auto handler = std::make_shared<EventHandler>(EventHandler{fd, events, callback});
@@ -63,12 +64,12 @@ utils::Result<void> EventLoop::AddFd(int fd, uint32_t events, std::function<void
     try {
         poller_->Add(fd, events, handler.get());
     } catch (const std::exception& e) {
-        LOG(Error, "Failed to add fd %d: %s", fd, e.what());
+        LOG_ERROR("Failed to add fd %d: %s", fd, e.what());
         return utils::Result<void>::Failure(constants::errors::kInternal, e.what());
     }
     
     handlers_[fd] = handler;
-    LOG(Trace, "Added fd %d to loop", fd);
+    LOG_TRACE("Added fd %d to loop", fd);
     return utils::Result<void>::Success();
 }
 
@@ -85,10 +86,10 @@ utils::Result<void> EventLoop::ModifyFd(int fd, uint32_t events) {
     try {
         poller_->Modify(fd, events, handler.get());
     } catch (const std::exception& e) {
-        LOG(Error, "Failed to modify fd %d: %s", fd, e.what());
+        LOG_ERROR("Failed to modify fd %d: %s", fd, e.what());
         return utils::Result<void>::Failure(constants::errors::kInternal, e.what());
     }
-    LOG(Trace, "Modified fd %d events", fd);
+    LOG_TRACE("Modified fd %d events", fd);
     return utils::Result<void>::Success();
 }
 
@@ -97,16 +98,16 @@ void EventLoop::RemoveFd(int fd) {
     if (handlers_.find(fd) != handlers_.end()) {
         poller_->Remove(fd);
         handlers_.erase(fd);
-        LOG(Trace, "Removed fd %d from loop", fd);
+        LOG_TRACE("Removed fd %d from loop", fd);
     }
 }
 
 void EventLoop::Run() {
     if (!poller_) {
-        LOG(Error, "EventLoop::Run() called without Init()");
+        LOG_ERROR("EventLoop::Run() called without Init()");
         return;
     }
-    LOG(Info, "Event loop starting");
+    LOG_INFO("Event loop starting");
     running_ = true;
     std::vector<Event> events;
     events.reserve(128);
@@ -117,7 +118,7 @@ void EventLoop::Run() {
         
         if (count < 0) {
             if (errno != EINTR) {
-                LOG(Error, "Poller returned error: %s", strerror(errno));
+                LOG_ERROR("Poller returned error: %s", strerror(errno));
             }
             break;
         }
@@ -125,25 +126,17 @@ void EventLoop::Run() {
         for (const auto& ev : events) {
             EventHandler* raw_handler = static_cast<EventHandler*>(ev.data);
 
-            // Fix: Extend lifetime of handler during callback execution
-            // We look up the shared_ptr in the map to ensure it's still valid and to hold a strong ref
-            // If the handler removes itself (e.g., HandleClose -> RemoveFd), this strong ref keeps it alive until return.
-
             if (!raw_handler) continue;
 
             int fd = raw_handler->fd;
             auto it = handlers_.find(fd);
             if (it == handlers_.end()) {
-                // Handler was removed by a previous event in this loop iteration?
                 continue;
             }
 
             std::shared_ptr<EventHandler> handler = it->second;
 
             if (handler && handler->callback) {
-                // Map generic event flags back to epoll-style constants expected by callbacks
-                // Currently our Poller impl maps 0x001->EPOLLIN etc implicitly in the callbacks usage
-                // TODO: Define abstraction for EventFlags
                 uint32_t flags = 0;
                 if (ev.events & 0x001) flags |= EPOLLIN;
                 if (ev.events & 0x004) flags |= EPOLLOUT;
@@ -152,11 +145,11 @@ void EventLoop::Run() {
             }
         }
     }
-    LOG(Info, "Event loop stopped");
+    LOG_INFO("Event loop stopped");
 }
 
 void EventLoop::Stop() {
-    LOG(Info, "Stopping event loop");
+    LOG_INFO("Stopping event loop");
     running_ = false;
     WakeUp();
 }

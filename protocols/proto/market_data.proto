@@ -1,0 +1,30 @@
+syntax = "proto3";
+package networklib.oms;
+
+message MarketData {
+  string symbol = 1;
+  double last_price = 2;
+  double last_quantity = 3;
+  double bid_price = 4;
+  double bid_quantity = 5;
+  double ask_price = 6;
+  double ask_quantity = 7;
+  int64 timestamp_us = 8;
+  double volume_24h = 9;
+  double price_change_percent_24h = 10;
+}
+
+message MarketDataSubscription {
+  string symbol = 1;
+  bool subscribe = 2; // true to subscribe, false to unsubscribe
+}
+
+message Trade {
+  string trade_id = 1;
+  string symbol = 2;
+  double price = 3;
+  double quantity = 4;
+  int64 timestamp_us = 5;
+  string buyer_order_id = 6;
+  string seller_order_id = 7;
+}
