@@ -22,6 +22,7 @@ struct LogEntry {
     std::string thread_name;
     int process_id;
     std::string hostname;
+    std::string app_name;
     unsigned long sequence;
 };
 

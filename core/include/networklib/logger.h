@@ -30,8 +30,11 @@ public:
     // Initialize with semicolon-separated config string
     static bool Initialize(const char* config_string);
 
-    // Main logging function
+    // Main logging function - uses default logger
     static void Log(LogLevel level, const char* file, int line, const char* func, const char* format, ...);
+
+    // Log with explicit app name
+    static void LogApp(const char* app_name, LogLevel level, const char* file, int line, const char* func, const char* format, ...);
 
     // Cleanup and flush
     static void Deinitialize();
@@ -51,6 +54,17 @@ public:
             _Pragma("GCC diagnostic push") \
             _Pragma("GCC diagnostic ignored \"-Wformat-security\"") \
             networklib::logging::Logger::Log(networklib::logging::LogLevel::level, \
+                __FILE__, __LINE__, __FUNCTION__, (fmt), ##__VA_ARGS__); \
+            _Pragma("GCC diagnostic pop") \
+        } \
+    } while(0)
+
+#define LOG_APP(app_name, level, fmt, ...) \
+    do { \
+        if ((fmt)) { \
+            _Pragma("GCC diagnostic push") \
+            _Pragma("GCC diagnostic ignored \"-Wformat-security\"") \
+            networklib::logging::Logger::LogApp((app_name), networklib::logging::LogLevel::level, \
                 __FILE__, __LINE__, __FUNCTION__, (fmt), ##__VA_ARGS__); \
             _Pragma("GCC diagnostic pop") \
         } \

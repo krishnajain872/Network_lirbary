@@ -1,5 +1,6 @@
 #include "networklib/logger.h"
 #include "async_logger.hpp"
+#include "log_manager.hpp"
 #include <cstdarg>
 #include <cstdio>
 #include <thread>
@@ -14,10 +15,6 @@
 
 namespace networklib {
 namespace logging {
-
-// Singleton instance
-static AsyncLogger* g_logger = nullptr;
-static LoggerConfig g_config;
 
 // Thread-local sequence number
 thread_local unsigned long t_sequence = 0;
@@ -45,29 +42,27 @@ static int GetProcessId() {
 
 // Define class methods OUTSIDE namespace blocks to avoid ambiguity if header/source mismatch occurred
 bool logging::Logger::Initialize(const char* config_string) {
-    if (logging::g_logger) return false; // Already initialized
-
-    logging::g_config = logging::ParseConfig(config_string);
-    logging::g_logger = new logging::AsyncLogger();
-    logging::g_logger->Initialize(logging::g_config);
+    auto config = logging::ParseConfig(config_string);
+    logging::LogManager::Instance().Initialize(config);
     return true;
 }
 
 void logging::Logger::Deinitialize() {
-    if (logging::g_logger) {
-        logging::g_logger->Shutdown();
-        delete logging::g_logger;
-        logging::g_logger = nullptr;
-    }
+    logging::LogManager::Instance().Shutdown();
 }
 
 bool logging::Logger::IsLevelEnabled(logging::LogLevel level) {
-    if (!logging::g_logger) return false;
-    return level >= logging::g_config.severity;
+    auto logger = logging::LogManager::Instance().GetLogger();
+    // Optimized check requires access to config from logger,
+    // assuming GetLogger returns valid ptr if initialized
+    if (!logger) return false;
+    // For now, no fast check unless we expose config from logger
+    return true;
 }
 
 void logging::Logger::Log(logging::LogLevel level, const char* file, int line, const char* func, const char* format, ...) {
-    if (!logging::g_logger || !IsLevelEnabled(level)) return;
+    auto logger = logging::LogManager::Instance().GetLogger();
+    if (!logger) return;
 
     logging::LogEntry entry;
     entry.timestamp = std::chrono::system_clock::now();
@@ -76,7 +71,7 @@ void logging::Logger::Log(logging::LogLevel level, const char* file, int line, c
     entry.line = line;
     entry.function = func ? func : "";
     entry.thread_id = std::this_thread::get_id();
-    entry.thread_name = logging::GetThreadName(); // Uses thread_local cache
+    entry.thread_name = logging::GetThreadName();
     entry.process_id = logging::GetProcessId();
     entry.sequence = logging::t_sequence++;
 
@@ -88,7 +83,41 @@ void logging::Logger::Log(logging::LogLevel level, const char* file, int line, c
     va_end(args);
     entry.message = buffer;
 
-    logging::g_logger->Enqueue(std::move(entry));
+    logger->Enqueue(std::move(entry));
+}
+
+void logging::Logger::LogApp(const char* app_name, logging::LogLevel level, const char* file, int line, const char* func, const char* format, ...) {
+    auto logger = logging::LogManager::Instance().GetLogger(app_name);
+    if (!logger) {
+        // Fallback to default if not found?
+        // Per requirement "if not provide than use the first one",
+        // but this API explicitly asks for one.
+        // If not found, let's try default.
+        logger = logging::LogManager::Instance().GetLogger();
+        if (!logger) return;
+    }
+
+    logging::LogEntry entry;
+    entry.timestamp = std::chrono::system_clock::now();
+    entry.level = level;
+    entry.app_name = app_name;
+    entry.file = file ? file : "";
+    entry.line = line;
+    entry.function = func ? func : "";
+    entry.thread_id = std::this_thread::get_id();
+    entry.thread_name = logging::GetThreadName();
+    entry.process_id = logging::GetProcessId();
+    entry.sequence = logging::t_sequence++;
+
+    // Format message
+    char buffer[4096];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    entry.message = buffer;
+
+    logger->Enqueue(std::move(entry));
 }
 
 } // namespace networklib

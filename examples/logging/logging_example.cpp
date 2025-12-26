@@ -32,5 +32,8 @@ int main() {
     // 3. Async Performance
     RunWithConfig("Async High Perf", "appname=Example3;console=false;async=true;async_queue_size=5000");
 
+    // 4. JSON Format
+    RunWithConfig("JSON Output", "appname=Example4;console=true;format=json;severity=Info");
+
     return 0;
 }
