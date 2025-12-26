@@ -3,7 +3,7 @@
 #include "networklib/protocols/grpc/service_registry.h"
 #include "stream_envelope.pb.h"
 #include "grpc_stream_impl.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 
 namespace networklib {

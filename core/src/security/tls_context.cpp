@@ -1,6 +1,6 @@
 #include "networklib/security/tls_context.h"
 #include "networklib/constants/errors.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 
 namespace networklib {

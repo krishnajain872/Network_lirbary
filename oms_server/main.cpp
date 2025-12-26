@@ -1,7 +1,8 @@
-#include "network_lib.h"
+#include "networklib/network_lib.h"
 #include "orders.pb.h"
 #include "market_data.pb.h"
 #include "messages.pb.h"
+#include "stream_envelope.pb.h"
 
 #include <iostream>
 #include <map>
@@ -51,15 +52,6 @@ public:
 
         LOG_INFO("Order Cancelled: %s", order_id.c_str());
         return CreateResponse(it->second, OrderStatus::CANCELED, "Order Cancelled");
-    }
-
-    std::vector<Order> GetOrders() {
-        std::shared_lock lock(mutex_);
-        std::vector<Order> result;
-        for (const auto& [id, order] : orders_) {
-            result.push_back(order);
-        }
-        return result;
     }
 
 private:
@@ -129,7 +121,15 @@ int main(int argc, char** argv) {
         MarketDataPublisher md_publisher(server);
 
         server->RegisterStreamHandler([&](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
-            // Logic handled by server internal dispatch or stubbed
+            (void)ctx; (void)resp;
+            // Simplified Dispatch
+            if (req.has_header() && req.header().message_type() == "ORDER_NEW" && req.has_payload()) {
+                Order order;
+                if (order.ParseFromString(req.payload().data())) {
+                    OrderResponse or_resp = order_manager.PlaceOrder(order);
+                    // In real app, write back to resp or ctx
+                }
+            }
         });
 
         LOG_INFO("Starting OMS Server...");

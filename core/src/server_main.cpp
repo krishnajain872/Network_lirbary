@@ -1,5 +1,5 @@
-#include "networklib/network_lib.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
+#include "networklib/logging.h"
 #include "networklib/config/config.h"
 #include <iostream>
 #include <csignal>

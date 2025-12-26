@@ -1,7 +1,8 @@
 #ifndef NETWORKLIB_CORE_CLIENT_H
 #define NETWORKLIB_CORE_CLIENT_H
 
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
+#include "networklib/detail/interfaces.h"
 #include "networklib/config/config.h"
 #include "networklib/core/connection.h"
 #include "networklib/core/event/event_loop.h"

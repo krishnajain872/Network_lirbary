@@ -5,7 +5,8 @@
 #include <string>
 #include <functional>
 #include "networklib/core/connection.h"
-#include "networklib/network_lib.h" // For IStreamContext
+#include "networklib/logging.h"
+#include "networklib/detail/interfaces.h" // For IStreamContext
 #include "networklib/core/resilience/token_bucket.h"
 
 // Forward decl

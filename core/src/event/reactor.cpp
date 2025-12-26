@@ -3,7 +3,7 @@
 #include "networklib/core/event/udp_socket.h"
 #include "networklib/observability/metrics/metrics_collector.h"
 #include "networklib/protocols/udp/udp_handler.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 #include <unistd.h>
 #include <sys/epoll.h>

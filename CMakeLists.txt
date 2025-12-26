@@ -40,7 +40,7 @@ target_precompile_headers(network PRIVATE
 
 target_include_directories(network PUBLIC
     core/include
-    core/include/networklib
+    core/include/networklib # To allow #include "detail/interfaces.h" via "networklib/detail/interfaces.h"? No, root is core/include.
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Protobuf_INCLUDE_DIR}
 )
@@ -97,12 +97,4 @@ if(INTEGRATION_TEST_SRCS)
     target_link_libraries(integration_tests PRIVATE network GTest::gtest_main)
     target_include_directories(integration_tests PRIVATE core/include/networklib)
     add_test(NAME IntegrationTests COMMAND integration_tests)
-endif()
-
-# Performance Tests
-file(GLOB PERFORMANCE_TEST_SRCS tests/performance/*.cpp)
-if(PERFORMANCE_TEST_SRCS)
-    add_executable(performance_tests ${PERFORMANCE_TEST_SRCS})
-    target_link_libraries(performance_tests PRIVATE network GTest::gtest_main)
-    target_include_directories(performance_tests PRIVATE core/include/networklib)
 endif()

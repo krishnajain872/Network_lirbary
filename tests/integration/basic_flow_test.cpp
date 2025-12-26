@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "network_lib.h"
+#include "networklib/network_lib.h"
 #include "stream_envelope.pb.h"
-#include <fstream> // Added
+#include <fstream>
 #include <thread>
 #include <chrono>
 
@@ -10,16 +10,14 @@ using namespace networklib;
 class IntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Setup Server Config
         std::ofstream out("int_server_config.yaml");
         out << "server:\n"
-            << "  protocol: tcp\n" // Use TCP for simple integration
+            << "  protocol: tcp\n"
             << "  port: 8085\n"
             << "logging:\n"
-            << "  level: error\n"; // Keep logs quiet
+            << "  level: error\n";
         out.close();
 
-        // Setup Client Config
         std::ofstream out_c("int_client_config.yaml");
         out_c << "client:\n"
               << "  mode: tcp\n"
@@ -36,9 +34,11 @@ TEST_F(IntegrationTest, ConnectAndSend) {
 
     bool received = false;
     server->RegisterStreamHandler([&](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
+        (void)resp; (void)ctx;
         received = true;
-        // Echo back
-        resp = req;
+        if (req.has_payload() && req.payload().data() == "Hello Integration") {
+            // Success
+        }
     });
 
     std::thread server_thread([&]() {
@@ -46,7 +46,6 @@ TEST_F(IntegrationTest, ConnectAndSend) {
         server->Wait();
     });
 
-    // Give server time to start
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     auto client = NetworkLib::CreateClient("int_client_config.yaml");
@@ -59,7 +58,6 @@ TEST_F(IntegrationTest, ConnectAndSend) {
 
     client->Send(env);
 
-    // Wait for processing
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     EXPECT_TRUE(received);

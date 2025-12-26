@@ -1,6 +1,6 @@
 #include "networklib/protocols/rpc/rpc_handler.h"
 #include "stream_envelope.pb.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 #include <arpa/inet.h>
 #include <cstring>

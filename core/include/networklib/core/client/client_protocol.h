@@ -2,7 +2,8 @@
 #define NETWORKLIB_CORE_CLIENT_CLIENT_PROTOCOL_H
 
 #include "networklib/core/connection.h"
-#include "networklib/network_lib.h" // For StreamEnvelope, MessageHandler
+#include "networklib/logging.h"
+#include "networklib/detail/interfaces.h" // For StreamEnvelope, MessageHandler
 #include <memory>
 
 namespace networklib {

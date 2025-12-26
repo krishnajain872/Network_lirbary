@@ -1,7 +1,8 @@
 #ifndef NETWORKLIB_CORE_SERVER_H
 #define NETWORKLIB_CORE_SERVER_H
 
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
+#include "networklib/detail/interfaces.h"
 #include "networklib/config/config.h"
 #include "networklib/core/event/reactor.h"
 #include "networklib/core/config/config_hot_reload.h"

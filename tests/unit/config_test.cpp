@@ -1,11 +1,10 @@
 #include <gtest/gtest.h>
-#include "network_lib.h"
+#include "networklib/network_lib.h"
 #include <fstream>
 
 using namespace networklib;
 
 TEST(ConfigParserTest, ParseServerConfig) {
-    // Write temp config
     std::ofstream out("test_server_config.yaml");
     out << "server:\n"
         << "  protocol: grpc\n"

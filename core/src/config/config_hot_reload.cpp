@@ -1,5 +1,5 @@
 #include "networklib/core/config/config_hot_reload.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <iostream>
