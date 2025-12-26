@@ -12,13 +12,14 @@ void signal_handler(int) {
     if (shutdown_handler) shutdown_handler();
 }
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
     signal(SIGINT, signal_handler);
 
     NetworkLib::InitializeLogger("appname=GenericServer;console=true;severity=Info");
 
     // Create Config manually
     config::ServerConfig config;
+    std::string mode = "tcp"; // Default
     config.mode = mode;
     config.network.port = 8091;
 
@@ -26,7 +27,7 @@ int main(int argc, char** argv) {
 
     auto server = NetworkLib::CreateServer(config);
 
-    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp) {
+    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> /*ctx*/) {
         logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[C++] Received Request: %s", req.header().message_type().c_str());
 
         // Echo back

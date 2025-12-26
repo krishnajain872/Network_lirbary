@@ -12,6 +12,7 @@ file(GLOB PROTO_FILES protocols/proto/*.proto)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
 
 file(GLOB_RECURSE CORE_SOURCES core/src/*.cpp)
+list(FILTER CORE_SOURCES EXCLUDE REGEX "core/src/server_main.cpp")
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 

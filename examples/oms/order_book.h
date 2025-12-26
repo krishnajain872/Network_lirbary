@@ -39,6 +39,7 @@ public:
         
         // Simple Matching Logic
         bool matched = false;
+        (void)matched;
         // Iterate opposite side to match
         // Note: Very naive O(N) matching for Phase 21 demo. Real OMS uses O(1) price levels.
         

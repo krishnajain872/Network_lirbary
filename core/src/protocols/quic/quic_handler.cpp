@@ -16,7 +16,7 @@ struct QuicStream {
     std::string buffer;
 };
 
-void QuicHandler::OnConnection(const networklib::core::Connection::Ptr& conn) {
+void QuicHandler::OnConnection(const networklib::core::Connection::Ptr& /*conn*/) {
     logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[QUIC] Handshake simulated. Connection established.");
     // In real QUIC, we'd negotiate keys here
 }

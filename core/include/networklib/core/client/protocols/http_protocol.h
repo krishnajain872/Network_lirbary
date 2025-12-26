@@ -11,7 +11,7 @@ namespace client {
 
 class HttpClientProtocol : public IClientProtocol {
 public:
-    void OnConnect(const std::shared_ptr<Connection>& conn) override {}
+    void OnConnect(const std::shared_ptr<Connection>& /*conn*/) override {}
 
     void Send(const std::shared_ptr<Connection>& conn, const StreamEnvelope& envelope) override {
         std::string body;

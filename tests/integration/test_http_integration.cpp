@@ -22,7 +22,7 @@
 
 using namespace networklib;
 
-void RunServer(int port, bool& running) {
+void RunServer(int port, bool& /*running*/) {
     auto loop = std::make_unique<core::event::EventLoop>();
     loop->Init();
     core::event::Reactor reactor(std::move(loop));
@@ -74,6 +74,7 @@ int main() {
     int port = 8081;
     bool success = false;
     bool server_running = true;
+    (void)server_running;
 
     // Start server in thread
     std::thread server_thread([port]() {

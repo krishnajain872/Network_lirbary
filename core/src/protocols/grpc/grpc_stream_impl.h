@@ -27,11 +27,11 @@ public:
         }
     }
 
-    void WriteHeaders(int status) override {
+    void WriteHeaders(int /*status*/) override {
         // Send HTTP/2 HEADERS frame (200 OK, application/grpc)
     }
 
-    void Finish(int status) override {
+    void Finish(int /*status*/) override {
         // Send Trailers (grpc-status) + End Stream
     }
 

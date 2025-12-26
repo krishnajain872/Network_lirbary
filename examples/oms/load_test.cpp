@@ -11,7 +11,7 @@
 // Load Test Tool
 // Simulates 10k clients connecting via TCP (mocking gRPC/HTTP)
 
-void ClientWorker(int id, int count, std::atomic<int>& connected) {
+void ClientWorker(int /*id*/, int count, std::atomic<int>& connected) {
     for (int i = 0; i < count; ++i) {
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) continue;

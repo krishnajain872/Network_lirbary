@@ -2,6 +2,7 @@
 #include "networklib/protocols/websocket/handshake.h"
 #include "networklib/core/memory/buffer.h"
 #include "networklib/logger.h"
+#include "stream_envelope.pb.h"
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -52,7 +53,7 @@ private:
     core::Connection::Ptr conn_;
 };
 
-void WebSocketHandler::OnConnection(const core::Connection::Ptr& conn) {
+void WebSocketHandler::OnConnection(const core::Connection::Ptr& /*conn*/) {
     is_upgraded_ = false;
 }
 

@@ -55,3 +55,10 @@ public:
             _Pragma("GCC diagnostic pop") \
         } \
     } while(0)
+
+#define LOG_TRACE(fmt, ...) LOG(Trace, fmt, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) LOG(Debug, fmt, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...)  LOG(Info, fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  LOG(Warn, fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LOG(Error, fmt, ##__VA_ARGS__)
+#define LOG_FATAL(fmt, ...) LOG(Fatal, fmt, ##__VA_ARGS__)

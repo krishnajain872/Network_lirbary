@@ -16,7 +16,7 @@ PYBIND11_MODULE(networklib_py, m) {
         .def("stop", &IServer::Stop)
         .def("wait", &IServer::Wait)
         .def("register_stream_handler", [](IServer& self, py::function callback) {
-            self.RegisterStreamHandler([callback](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
+            self.RegisterStreamHandler([callback](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> /*ctx*/) {
                 // Acquire GIL for Python call
                 py::gil_scoped_acquire gil;
 
