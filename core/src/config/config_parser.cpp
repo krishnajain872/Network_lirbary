@@ -186,6 +186,15 @@ ServerConfig ConfigParser::Parse(const std::string& filepath) {
                 config.observability.tracing.enabled = GetSafe<bool>(obs["tracing"], "enabled", false);
                 config.observability.tracing.exporter = GetSafe<std::string>(obs["tracing"], "exporter", "jaeger");
             }
+
+            if (obs["logging"]) {
+                YAML::Node log = obs["logging"];
+                config.observability.logging.level = GetSafe<std::string>(log, "level", "info");
+                config.observability.logging.format = GetSafe<std::string>(log, "format", "text");
+                config.observability.logging.output = GetSafe<std::string>(log, "output", "stdout");
+                config.observability.logging.file_path = GetSafe<std::string>(log, "file_path", "");
+                config.observability.logging.compress = GetSafe<bool>(log, "compress", false);
+            }
         }
 
     } catch (const YAML::Exception& e) {
@@ -219,6 +228,25 @@ ClientConfig ConfigParser::ParseClient(const std::string& filepath) {
         // Ignore or log
     }
     return config;
+}
+
+std::string ConfigParser::GenerateLoggerConfig(const LoggingConfig& config) {
+    std::stringstream ss;
+    ss << "severity=" << config.level << ";";
+    ss << "format=" << config.format << ";";
+
+    if (config.output == "file" || !config.file_path.empty()) {
+        ss << "logfile=" << config.file_path << ";";
+        ss << "console=false;"; // Disable console if file is specified as primary
+    } else {
+        ss << "console=true;";
+    }
+
+    if (config.compress) {
+        ss << "rotation_compress=true;";
+    }
+
+    return ss.str();
 }
 
 } // namespace config

@@ -1,6 +1,7 @@
 #include "networklib/core/connection.h"
 #include "networklib/constants/limits.h"
 #include "networklib/core/observability/tracing/tracer.h"
+#include "networklib/logger.h"
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -30,16 +31,20 @@ utils::Result<void> Connection::Connect(const std::string& host, int port) {
     serv_addr.sin_port = htons(port);
     
     if (inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr) <= 0) {
+        LOG(Error, "Invalid address for connection: %s", host.c_str());
         return utils::Result<void>::Failure(constants::errors::kConfigError, "Invalid address");
     }
 
+    LOG(Debug, "Connecting to %s:%d", host.c_str(), port);
     if (connect(fd_, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         if (errno != EINPROGRESS) {
+             LOG(Error, "Connect failed to %s:%d: %s", host.c_str(), port, strerror(errno));
              return utils::Result<void>::Failure(constants::errors::kConnectionFailed, "Connect failed");
         }
         state_ = kConnecting;
     } else {
         state_ = kConnected;
+        LOG(Info, "Connected to %s:%d", host.c_str(), port);
     }
     return utils::Result<void>::Success();
 }
@@ -62,12 +67,14 @@ void Connection::HandleHandshake() {
     int ret = SSL_do_handshake(ssl_);
     if (ret == 1) {
         state_ = kConnected;
+        LOG(Info, "SSL handshake successful for fd %d", fd_);
         HandleRead();
     } else {
         int err = SSL_get_error(ssl_, ret);
         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
             return;
         } else {
+            LOG(Error, "SSL handshake failed for fd %d: error code %d", fd_, err);
             HandleError();
         }
     }
@@ -161,12 +168,14 @@ void Connection::HandleWrite() {
 
 void Connection::HandleClose() {
     state_ = kDisconnected;
+    LOG(Debug, "Connection closed for fd %d", fd_);
     if (disconnect_callback_) {
         disconnect_callback_(shared_from_this());
     }
 }
 
 void Connection::HandleError() {
+    LOG(Error, "Connection error on fd %d", fd_);
     HandleClose();
 }
 

@@ -17,17 +17,20 @@ int main(int argc, char** argv) {
 
     NetworkLib::InitializeLogger("appname=GenericServer;console=true;severity=Info");
 
+    std::string mode = "tcp"; // Default
+    if (argc > 1) mode = argv[1];
+
     // Create Config manually
     config::ServerConfig config;
     config.mode = mode;
     config.network.port = 8091;
 
-    std::cout << "Starting C++ Generic Server (" << mode << ") on 8091..." << std::endl;
+    LOG(Info, "Starting C++ Generic Server (%s) on 8091...", mode.c_str());
 
     auto server = NetworkLib::CreateServer(config);
 
-    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp) {
-        logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "[C++] Received Request: %s", req.header().message_type().c_str());
+    server->RegisterStreamHandler([](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
+        LOG(Info, "[C++] Received Request: %s", req.header().message_type().c_str());
 
         // Echo back
         resp.mutable_payload()->set_data("Hello from C++ Generic Server!");
@@ -38,7 +41,7 @@ int main(int argc, char** argv) {
         server->Stop();
     };
 
-    logging::Logger::Log(logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, "Starting C++ Generic Server on 8091...");
+    LOG(Info, "Starting C++ Generic Server on 8091...");
     if (server->Start()) {
         server->Wait();
     }

@@ -116,3 +116,8 @@ TEST_F(ConfigTest, ParsesFullConfiguration) {
     EXPECT_EQ(config.observability.metrics.metrics_list.size(), 2);
     EXPECT_EQ(config.observability.tracing.exporter, "zipkin");
 }
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

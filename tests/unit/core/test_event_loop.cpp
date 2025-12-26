@@ -2,8 +2,11 @@
 #include <unistd.h>
 #include <thread>
 #include <cassert>
-#include "event_loop.h"
+#include "networklib/core/event/event_loop.h"
+#include "networklib/logger.h"
 #include <sys/eventfd.h>
+
+using namespace networklib::core::event;
 
 void TestEventLoop() {
     EventLoop loop;
@@ -35,6 +38,9 @@ void TestEventLoop() {
 }
 
 int main() {
+    // Initialize logger for tests
+    networklib::logging::Logger::Initialize("severity=Debug;console=true");
     TestEventLoop();
+    networklib::logging::Logger::Deinitialize();
     return 0;
 }

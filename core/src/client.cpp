@@ -1,5 +1,6 @@
 #include "networklib/core/client.h"
 #include "stream_envelope.pb.h"
+#include "networklib/logger.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,10 +12,14 @@ namespace core {
 
 Client::Client(const config::ClientConfig& config) : config_(config) {
     loop_ = std::make_unique<event::EventLoop>();
-    loop_->Init();
+    auto res = loop_->Init();
+    if (!res) {
+        LOG(Fatal, "Failed to init loop in Client: %s", res.GetError().Message().c_str());
+    }
 
     int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
     connection_ = std::make_shared<Connection>(loop_.get(), fd);
+    LOG(Info, "Client initialized for %s mode", config.mode.c_str());
 }
 
 Client::~Client() {
@@ -41,13 +46,19 @@ bool Client::Connect() {
     if (config_.ssl.enabled) {
         tls_context_ = std::make_shared<networklib::security::TlsContext>();
         auto res = tls_context_->Init(config_.ssl.cert_file, config_.ssl.key_file);
-        // Warning: Init failing handled?
+        if (!res) {
+             LOG(Error, "Client TLS init failed: %s", res.GetError().Message().c_str());
+             return false;
+        }
         SSL* ssl = tls_context_->CreateSsl();
         connection_->SetSsl(ssl, Connection::SslMode::kClient);
     }
 
     auto res = connection_->Connect(config_.network.host, config_.network.port);
-    if (!res) return false;
+    if (!res) {
+        LOG(Error, "Client connect failed: %s", res.GetError().Message().c_str());
+        return false;
+    }
 
     loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
         if (events & EPOLLIN) connection_->HandleRead();
