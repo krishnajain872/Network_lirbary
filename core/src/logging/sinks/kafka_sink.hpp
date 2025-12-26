@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log_sink.hpp"
+#include "../log_formatter.hpp"
 
 // Check if Kafka library is available (mock check for now)
 #ifdef ENABLE_KAFKA
@@ -12,20 +13,19 @@ namespace logging {
 
 class KafkaSink : public LogSink {
 public:
-    KafkaSink(const std::string& broker, const std::string& topic) {
-        (void)broker;
-        (void)topic;
+    explicit KafkaSink(const LoggerConfig& config) : config_(config) {
 #ifdef ENABLE_KAFKA
-        // RdKafka initialization would go here
+        // RdKafka initialization would go here using config.kafka_broker, config.kafka_topic
 #endif
     }
 
     void Write(const LogEntry& entry) override {
-        (void)entry;
 #ifdef ENABLE_KAFKA
+        std::string formatted = LogFormatter::Format(entry, config_);
         // Produce message to Kafka
+        // producer_->produce(topic, ..., formatted, ...);
 #else
-        // No-op or throw exception if used without Kafka support
+        (void)entry;
 #endif
     }
 
@@ -34,6 +34,9 @@ public:
         // Flush producer
 #endif
     }
+
+private:
+    LoggerConfig config_;
 };
 
 } // namespace logging

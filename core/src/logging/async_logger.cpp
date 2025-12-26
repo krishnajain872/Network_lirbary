@@ -18,16 +18,16 @@ void AsyncLogger::Initialize(const LoggerConfig& config) {
 
     // Add default sinks based on config
     if (config_.console_enabled) {
-        AddSink(std::make_unique<ConsoleSink>());
+        AddSink(std::make_unique<ConsoleSink>(config_));
     }
     if (config_.file_enabled && !config_.file_path.empty()) {
-        AddSink(std::make_unique<FileSink>(config_.file_path, config_.rotation_size, config_.max_backups));
+        AddSink(std::make_unique<FileSink>(config_));
     }
     if (config_.syslog_enabled) {
-        AddSink(std::make_unique<SyslogSink>(config_.app_name));
+        AddSink(std::make_unique<SyslogSink>(config_));
     }
     if (config_.kafka_enabled) {
-        AddSink(std::make_unique<KafkaSink>(config_.kafka_broker, config_.kafka_topic));
+        AddSink(std::make_unique<KafkaSink>(config_));
     }
 
     running_ = true;

@@ -237,7 +237,13 @@ std::string ConfigParser::GenerateLoggerConfig(const LoggingConfig& config) {
 
     if (config.output == "file" || !config.file_path.empty()) {
         ss << "logfile=" << config.file_path << ";";
-        ss << "console=false;"; // Disable console if file is specified as primary
+        // Do not force disable console here.
+        // Logic should rely on explicit config or default to enabled if not specified.
+        // For this parser which maps "LoggingConfig" (which has limited fields) to string:
+        // We will default console to true unless output is explicitly ONLY file (which isn't fully capturable here easily without more flags)
+        // But the requirement is "same log at same time".
+        // So we keep console enabled unless explicitly disabled in future.
+        ss << "console=true;";
     } else {
         ss << "console=true;";
     }

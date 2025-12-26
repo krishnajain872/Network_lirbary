@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log_sink.hpp"
+#include "../log_formatter.hpp"
 #include <syslog.h>
 
 namespace networklib {
@@ -8,8 +9,8 @@ namespace logging {
 
 class SyslogSink : public LogSink {
 public:
-    explicit SyslogSink(const std::string& ident) {
-        openlog(ident.c_str(), LOG_PID | LOG_NDELAY, LOG_USER);
+    explicit SyslogSink(const LoggerConfig& config) : config_(config) {
+        openlog(config.app_name.c_str(), LOG_PID | LOG_NDELAY, LOG_USER);
     }
 
     ~SyslogSink() override {
@@ -27,12 +28,17 @@ public:
             case LogLevel::Fatal: priority = LOG_CRIT; break;
             case LogLevel::Critical: priority = LOG_EMERG; break;
         }
-        syslog(priority, "%s", entry.message.c_str());
+
+        std::string formatted = LogFormatter::Format(entry, config_);
+        syslog(priority, "%s", formatted.c_str());
     }
 
     void Flush() override {
         // Syslog flushes automatically usually
     }
+
+private:
+    LoggerConfig config_;
 };
 
 } // namespace logging

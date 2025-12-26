@@ -78,22 +78,36 @@ int main() {
     bool server_running = true;
     (void)server_running;
 
+    // We need to coordinate shutdown to avoid segfaults
+    std::shared_ptr<core::event::Reactor> reactor_ptr;
+
     // Start server in thread
-    std::thread server_thread([port]() {
-        // We need a way to stop the reactor for clean exit, but for this simple test, detaching or killing is fine.
-        // Or we use a loop with timeout.
-        // For Phase 5 test, we'll just run the reactor.
+    std::thread server_thread([port, &reactor_ptr]() {
         auto loop = std::make_unique<core::event::EventLoop>();
         loop->Init();
-        core::event::Reactor reactor(std::move(loop));
+        auto r = std::make_shared<core::event::Reactor>(std::move(loop));
+
+        // Store reactor for external access (not thread safe but fine for this specific test sequence)
+        reactor_ptr = r;
+
         auto handler = std::make_shared<protocols::http::HttpHandler>();
-        reactor.RegisterServer(port, handler);
-        reactor.Run();
+        r->RegisterServer(port, handler);
+        r->Run();
     });
-    server_thread.detach();
 
     // Run client
     ClientThread(port, success);
+
+    // Stop server
+    if (reactor_ptr) {
+        reactor_ptr->Stop();
+    }
+
+    if (server_thread.joinable()) {
+        server_thread.join();
+    }
+
+    networklib::logging::Logger::Deinitialize();
 
     if (success) {
         std::cout << "TestHttpIntegration PASSED" << std::endl;

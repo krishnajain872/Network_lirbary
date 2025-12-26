@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log_sink.hpp"
+#include "../log_formatter.hpp"
 #include <fstream>
 #include <mutex>
 #include <filesystem>
@@ -10,8 +11,9 @@ namespace logging {
 
 class FileSink : public LogSink {
 public:
-    explicit FileSink(const std::string& path, size_t rotation_size = 0, int max_backups = 0)
-        : path_(path), rotation_size_(rotation_size), max_backups_(max_backups) {
+    explicit FileSink(const LoggerConfig& config)
+        : config_(config), path_(config.file_path),
+          rotation_size_(config.rotation_size), max_backups_(config.max_backups) {
         Open();
     }
 
@@ -25,13 +27,11 @@ public:
             Rotate();
         }
 
-        // Simple text format
-        auto time_t = std::chrono::system_clock::to_time_t(entry.timestamp);
-        file_ << "[" << std::put_time(std::localtime(&time_t), "%Y-%m-%dT%H:%M:%S") << "] "
-              << entry.message << "\n";
+        std::string formatted = LogFormatter::Format(entry, config_);
+        file_ << formatted << "\n";
 
         // Approximate size tracking
-        current_size_ += entry.message.size() + 30; // + timestamp overhead
+        current_size_ += formatted.size() + 1;
     }
 
     void Flush() override {
@@ -40,6 +40,7 @@ public:
     }
 
 private:
+    LoggerConfig config_;
     std::string path_;
     size_t rotation_size_;
     int max_backups_;
