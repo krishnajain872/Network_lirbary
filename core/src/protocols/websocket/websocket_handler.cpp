@@ -1,7 +1,7 @@
 #include "networklib/protocols/websocket/websocket_handler.h"
 #include "networklib/protocols/websocket/handshake.h"
 #include "networklib/core/memory/buffer.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include "stream_envelope.pb.h"
 #include <iostream>
 #include <map>

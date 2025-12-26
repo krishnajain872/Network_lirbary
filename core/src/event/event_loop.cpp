@@ -1,11 +1,11 @@
 #include "networklib/core/event/event_loop.h"
 #include "networklib/core/event/epoll_poller.h"
-// #include "networklib/core/event/io_uring_poller.h" // REMOVED for dependency
+// #include "networklib/core/event/io_uring_poller.h" // DISABLED
 #include <sys/eventfd.h>
 #include <unistd.h>
 #include <iostream>
 #include "networklib/constants/errors.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 #include <cstring>
 #include <sys/epoll.h>
@@ -38,14 +38,12 @@ utils::Result<void> EventLoop::Init(PollerType type) {
         );
     }
 
-    // Create Wakeup FD
     wakeup_fd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (wakeup_fd_ < 0) {
         LOG_ERROR("Failed to create eventfd: %s", strerror(errno));
         return utils::Result<void>::Failure(constants::errors::kInternal, "Failed to create eventfd");
     }
 
-    // Register Wakeup FD
     AddFd(wakeup_fd_, EPOLLIN, [this](uint32_t) {
         HandleRead();
     });
@@ -125,22 +123,17 @@ void EventLoop::Run() {
 
         for (const auto& ev : events) {
             EventHandler* raw_handler = static_cast<EventHandler*>(ev.data);
-
             if (!raw_handler) continue;
 
             int fd = raw_handler->fd;
             auto it = handlers_.find(fd);
-            if (it == handlers_.end()) {
-                continue;
-            }
+            if (it == handlers_.end()) continue;
 
             std::shared_ptr<EventHandler> handler = it->second;
-
             if (handler && handler->callback) {
                 uint32_t flags = 0;
                 if (ev.events & 0x001) flags |= EPOLLIN;
                 if (ev.events & 0x004) flags |= EPOLLOUT;
-                
                 handler->callback(flags);
             }
         }

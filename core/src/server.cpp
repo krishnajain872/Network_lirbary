@@ -2,7 +2,7 @@
 #include "networklib/protocols/protocol_handler.h"
 #include "networklib/protocols/udp/udp_handler.h"
 #include "networklib/core/event/event_loop.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 
 namespace networklib {

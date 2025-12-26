@@ -1,5 +1,5 @@
 #include "networklib/protocols/http/http_handler.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include "stream_envelope.pb.h"
 #include <sstream>
 #include <iostream>

@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include "stream_envelope.pb.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 
 namespace networklib {
 namespace protocols {

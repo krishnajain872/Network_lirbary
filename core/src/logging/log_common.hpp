@@ -1,6 +1,6 @@
 #pragma once
 
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include "networklib/external/json.hpp"
 #include <string>
 #include <chrono>

@@ -1,2 +1,0 @@
-add_executable(throughput_test throughput_test.cpp)
-target_link_libraries(throughput_test PRIVATE networklib pthread)

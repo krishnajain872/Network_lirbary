@@ -1,4 +1,5 @@
-#include "network_lib.h"
+#include "networklib/network_lib.h"
+#include "stream_envelope.pb.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -34,6 +35,7 @@ int main(int argc, char** argv) {
         LOG_INFO("Connected!");
 
         client->RegisterMessageHandler([](const StreamEnvelope& msg) {
+             (void)msg;
              LOG_INFO("Received message from server");
         });
 

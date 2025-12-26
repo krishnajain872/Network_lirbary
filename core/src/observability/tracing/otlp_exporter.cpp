@@ -1,5 +1,5 @@
 #include "networklib/core/observability/tracing/otlp_exporter.h"
-#include "networklib/network_lib.h"
+#include "networklib/logging.h"
 #include <iostream>
 #include <sstream>
 
