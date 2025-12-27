@@ -27,10 +27,6 @@ Client::~Client() {
 }
 
 bool Client::Connect() {
-    loop_thread_ = std::thread([this]() {
-        loop_->Run();
-    });
-
     connect_promise_ = std::promise<bool>();
     auto future = connect_promise_.get_future();
 
@@ -53,6 +49,12 @@ bool Client::Connect() {
         SSL* ssl = tls_context_->CreateSsl();
         connection_->SetSsl(ssl, Connection::SslMode::kClient);
     }
+
+    // Register FD before Connect to ensure we don't miss events if Connect completes immediately
+    loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
+        if (events & EPOLLIN) connection_->HandleRead();
+        if (events & EPOLLOUT) connection_->HandleWrite();
+    });
 
     auto res = connection_->Connect(config_.network.host, config_.network.port);
     if (!res) {
