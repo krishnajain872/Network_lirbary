@@ -1,5 +1,8 @@
 server:
-  protocol: tcp
-  port: 8085
+  mode: grpc
+  network:
+    port: 8085
 logging:
-  level: error
+  level: trace
+  output: file
+  file_path: server_debug.log
