@@ -14,7 +14,7 @@ namespace networklib {
 namespace core {
 namespace event {
 
-EventLoop::EventLoop() : running_(false), wakeup_fd_(-1), thread_id_(std::this_thread::get_id()) {}
+EventLoop::EventLoop() : running_(false), wakeup_fd_(-1), thread_id_(std::thread::id()) {}
 
 EventLoop::~EventLoop() {
     Stop();
@@ -138,6 +138,8 @@ void EventLoop::Run() {
                 uint32_t flags = 0;
                 if (ev.events & 0x001) flags |= EPOLLIN;
                 if (ev.events & 0x004) flags |= EPOLLOUT;
+                if (ev.events & EPOLLERR) flags |= EPOLLERR;
+                if (ev.events & EPOLLHUP) flags |= EPOLLHUP;
                 handler->callback(flags);
             }
         }

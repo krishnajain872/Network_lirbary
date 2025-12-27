@@ -74,7 +74,8 @@ int EpollPoller::Poll(std::vector<Event>& active_events, int timeout_ms) {
         ev.events = 0;
         if (events[i].events & EPOLLIN) ev.events |= 0x001;
         if (events[i].events & EPOLLOUT) ev.events |= 0x004;
-        if (events[i].events & (EPOLLERR | EPOLLHUP)) ev.events |= 0x001; // Treat error as Read to close
+        if (events[i].events & EPOLLERR) ev.events |= EPOLLERR;
+        if (events[i].events & EPOLLHUP) ev.events |= EPOLLHUP;
 
         active_events.push_back(ev);
     }
