@@ -70,7 +70,18 @@ bool Client::Connect() {
         });
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Wait for connection to be established or failed
+    int retries = 0;
+    while (!connection_->IsConnected() && retries < 20) { // 2 seconds timeout
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        retries++;
+    }
+
+    if (!connection_->IsConnected()) {
+        LOG(Error, "Client connect timed out or failed.");
+        return false;
+    }
+
     return true;
 }
 

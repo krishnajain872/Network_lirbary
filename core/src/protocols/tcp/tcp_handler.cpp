@@ -68,6 +68,7 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
              } else {
                  // Rate limited - drop or error?
                  // For now just consume and drop
+                 LOG(Warn, "Packet rate limited (dropped): length %d", length);
                  buf.Retrieve(4 + length);
              }
         } else {
