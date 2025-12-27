@@ -22,9 +22,11 @@ public:
     std::shared_ptr<AsyncLogger> Initialize(const LoggerConfig& config) {
         std::lock_guard<std::mutex> lock(mutex_);
 
+        std::string app_name = config.app_name.empty() ? "default" : config.app_name;
+
         // If it exists, we might want to update it or just return it.
         // For simplicity, if it exists, we return it. (Or we could re-config).
-        auto it = loggers_.find(config.app_name);
+        auto it = loggers_.find(app_name);
         if (it != loggers_.end()) {
             // Ideally re-configure if needed, but for now just return
             return it->second;
@@ -32,11 +34,11 @@ public:
 
         auto logger = std::make_shared<AsyncLogger>();
         logger->Initialize(config);
-        loggers_[config.app_name] = logger;
+        loggers_[app_name] = logger;
 
         // If this is the first one, set as default
         if (default_app_name_.empty()) {
-            default_app_name_ = config.app_name;
+            default_app_name_ = app_name;
         }
 
         return logger;
