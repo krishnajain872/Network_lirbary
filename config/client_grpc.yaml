@@ -1,0 +1,14 @@
+client:
+  name: "grpc-client"
+  network:
+    host: "127.0.0.1"
+    port: 50051
+    protocol: "tcp"
+
+  protocols:
+    grpc:
+      enabled: true
+
+  observability:
+    logging:
+      level: "info"

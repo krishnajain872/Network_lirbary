@@ -1,0 +1,32 @@
+server:
+  mode: "grpc"
+  name: "order-service"
+
+  network:
+    host: "0.0.0.0"
+    port: 50051
+    protocol: "tcp"
+    socket:
+      so_reuseport: true       # CRITICAL: Allow multiple IO threads to accept
+      tcp_keepalive: true
+
+  protocols:
+    grpc:
+      enabled: true
+      max_receive_message_size_mb: 20
+      streaming:
+        max_concurrent_streams: 2000 # High concurrency
+      compression:
+        enabled: true          # Trade CPU for bandwidth
+        default_algorithm: "gzip"
+
+  performance:
+    io_threads: "auto"         # Use all available cores
+    worker_threads: "auto"     # For business logic
+    event_loop_type: "epoll"
+    memory:
+      connection_pool_size: 50000 # Handle connection spikes
+
+  observability:
+    logging:
+      level: "info"
