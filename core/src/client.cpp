@@ -54,6 +54,7 @@ bool Client::Connect() {
     loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
         if (events & EPOLLIN) connection_->HandleRead();
         if (events & EPOLLOUT) connection_->HandleWrite();
+        if (events & (EPOLLERR | EPOLLHUP)) connection_->HandleError();
     });
 
     auto res = connection_->Connect(config_.network.host, config_.network.port);
@@ -61,14 +62,6 @@ bool Client::Connect() {
         LOG(Error, "Client connect failed: %s", res.GetError().Message().c_str());
         return false;
     }
-
-    // FIX: AddFd must be called in loop thread to avoid race on handlers_ map
-    loop_->RunInLoop([this]() {
-        loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
-            if (events & EPOLLIN) connection_->HandleRead();
-            if (events & EPOLLOUT) connection_->HandleWrite();
-        });
-    });
 
     // Start the event loop thread
     if (!loop_thread_.joinable()) {
