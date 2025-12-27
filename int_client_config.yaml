@@ -1,5 +1,5 @@
 client:
-  mode: tcp
+  mode: grpc
   connection:
     host: 127.0.0.1
     port: 8085

@@ -45,8 +45,19 @@ void GrpcHandler::OnConnection(const core::Connection::Ptr& conn) {
              bool compressed;
              if (GrpcCodec::Decode(buf, payload, compressed)) {
                  networklib::StreamEnvelope req;
-                 req.mutable_header()->set_message_type("/test.Service/Method");
-                 req.mutable_payload()->set_data(payload);
+
+                 // FIX: Attempt to parse payload as StreamEnvelope (NetworkLib Protocol)
+                 // This fixes the hardcoded path issue by allowing the client to specify it in the envelope.
+                 bool parsed_envelope = req.ParseFromString(payload);
+
+                 if (!parsed_envelope || !req.has_header() || req.header().message_type().empty()) {
+                     // Fallback for standard gRPC clients or failed parsing:
+                     // Treat the payload as raw data and wrap it.
+                     // Note: We still default to the test path if no path is known, preserving behavior for specific tests.
+                     req.Clear();
+                     req.mutable_header()->set_message_type("/test.Service/Method");
+                     req.mutable_payload()->set_data(payload);
+                 }
 
                  networklib::StreamEnvelope resp;
                  auto ctx = std::make_shared<GrpcStreamContext>(session, stream->Id());

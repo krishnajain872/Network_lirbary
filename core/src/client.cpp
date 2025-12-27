@@ -60,9 +60,12 @@ bool Client::Connect() {
         return false;
     }
 
-    loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
-        if (events & EPOLLIN) connection_->HandleRead();
-        if (events & EPOLLOUT) connection_->HandleWrite();
+    // FIX: AddFd must be called in loop thread to avoid race on handlers_ map
+    loop_->RunInLoop([this]() {
+        loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
+            if (events & EPOLLIN) connection_->HandleRead();
+            if (events & EPOLLOUT) connection_->HandleWrite();
+        });
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
