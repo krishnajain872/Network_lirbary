@@ -52,11 +52,6 @@ void logging::Logger::Deinitialize() {
 }
 
 bool logging::Logger::IsLevelEnabled(logging::LogLevel level) {
-    auto logger = logging::LogManager::Instance().GetLogger();
-    // Optimized check requires access to config from logger,
-    // assuming GetLogger returns valid ptr if initialized
-    if (!logger) return false;
-    // For now, no fast check unless we expose config from logger
     return true;
 }
 

@@ -111,6 +111,7 @@ int main(int argc, char** argv) {
     std::string config_path = argv[1];
 
     try {
+        auto logger = networklib::logging::Logger::Initialize("appname=oms-server;level=Info;output=file;file_path=oms_server.log");
         auto server = NetworkLib::CreateServer(config_path);
         if (!server) {
             std::cerr << "Failed to create server." << std::endl;

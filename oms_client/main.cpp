@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     std::string scenario = (argc > 2) ? argv[2] : "interactive";
 
     try {
+        auto logger = networklib::logging::Logger::Initialize("appname=oms-client;level=Info;output=file;file_path=oms_client.log");
         auto client = NetworkLib::CreateClient(config_path);
         if (!client) {
             std::cerr << "Failed to create client." << std::endl;

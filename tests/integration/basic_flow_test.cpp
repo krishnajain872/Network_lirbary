@@ -12,7 +12,7 @@ protected:
     void SetUp() override {
         std::ofstream out("int_server_config.yaml");
         out << "server:\n"
-            << "  mode: grpc\n"
+            << "  mode: tcp\n"
             << "  network:\n"
             << "    port: 8085\n"
             << "logging:\n"
@@ -23,7 +23,7 @@ protected:
 
         std::ofstream out_c("int_client_config.yaml");
         out_c << "client:\n"
-              << "  mode: grpc\n"
+              << "  mode: tcp\n"
               << "  connection:\n"
               << "    host: 127.0.0.1\n"
               << "    port: 8085\n"

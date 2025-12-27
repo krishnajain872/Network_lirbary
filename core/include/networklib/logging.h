@@ -40,39 +40,43 @@ public:
 
 #define LOG_TRACE(fmt, ...) \
     do { \
-        if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Trace)) { \
-            networklib::logging::Logger::Log(networklib::logging::LogLevel::Trace, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__); \
-        } \
-    } while(0)
+        networklib::logging::Logger::Log( \
+            networklib::logging::LogLevel::Trace, \
+            __FILE__, __LINE__, __FUNCTION__, \
+            fmt, ##__VA_ARGS__); \
+    } while (0)
 
 #define LOG_DEBUG(fmt, ...) \
     do { \
-        if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Debug)) { \
-            networklib::logging::Logger::Log(networklib::logging::LogLevel::Debug, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__); \
-        } \
-    } while(0)
+        networklib::logging::Logger::Log( \
+            networklib::logging::LogLevel::Debug, \
+            __FILE__, __LINE__, __FUNCTION__, \
+            fmt, ##__VA_ARGS__); \
+    } while (0)
 
 #define LOG_INFO(fmt, ...) \
     do { \
-        if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Info)) { \
-            networklib::logging::Logger::Log(networklib::logging::LogLevel::Info, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__); \
-        } \
-    } while(0)
+        networklib::logging::Logger::Log( \
+            networklib::logging::LogLevel::Info, \
+            __FILE__, __LINE__, __FUNCTION__, \
+            fmt, ##__VA_ARGS__); \
+    } while (0)
 
 #define LOG_WARN(fmt, ...) \
     do { \
-        if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Warn)) { \
-            networklib::logging::Logger::Log(networklib::logging::LogLevel::Warn, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__); \
-        } \
-    } while(0)
+        networklib::logging::Logger::Log( \
+            networklib::logging::LogLevel::Warn, \
+            __FILE__, __LINE__, __FUNCTION__, \
+            fmt, ##__VA_ARGS__); \
+    } while (0)
 
 #define LOG_ERROR(fmt, ...) \
     do { \
-        if (networklib::logging::Logger::IsLevelEnabled(networklib::logging::LogLevel::Error)) { \
-            networklib::logging::Logger::Log(networklib::logging::LogLevel::Error, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__); \
-        } \
-    } while(0)
-
+        networklib::logging::Logger::Log( \
+            networklib::logging::LogLevel::Error, \
+            __FILE__, __LINE__, __FUNCTION__, \
+            fmt, ##__VA_ARGS__); \
+    } while (0)
 // Backward compatibility macros if needed by internal code
 #define LOG(level, fmt, ...) \
     do { \
