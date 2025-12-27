@@ -10,17 +10,38 @@ namespace networklib {
 namespace protocols {
 namespace tcp {
 
+// Simple implementation of IStreamContext for TCP
+class TcpStreamContext : public IStreamContext {
+public:
+    TcpStreamContext(core::Connection::Ptr conn) : conn_(conn) {}
+
+    void Write(const StreamEnvelope& msg) override {
+        if (auto conn = conn_.lock()) {
+            std::string payload = msg.SerializeAsString();
+            uint32_t resp_len = htonl(static_cast<uint32_t>(payload.size()));
+            std::string frame;
+            frame.append(reinterpret_cast<const char*>(&resp_len), sizeof(resp_len));
+            frame.append(payload);
+            conn->Send(frame);
+        }
+    }
+
+    void Close() override {
+        if (auto conn = conn_.lock()) {
+            conn->ForceClose();
+        }
+    }
+
+private:
+    std::weak_ptr<core::Connection> conn_;
+};
+
 void TcpHandler::OnConnection(const core::Connection::Ptr& conn) {
     (void)conn;
 }
 
 void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
     auto& buf = conn->InputBuffer();
-
-    // Check rate limit before processing? Or process and then check?
-    // Processing might be expensive, so check first?
-    // But OnMessage is called when data is available.
-    // RateLimiter is typically for request count.
 
     while (buf.ReadableBytes() >= 4) {
         uint32_t length = 0;
@@ -49,7 +70,11 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
                     }
 
                     if (stream_handler_) {
-                        stream_handler_(req, resp, nullptr); // nullptr for ctx for now
+                        // Create a context for this connection
+                        // Note: Creating a new shared_ptr every time is inefficient but safe for now.
+                        // Ideally we should cache it in the Connection context or similar.
+                        auto ctx = std::make_shared<TcpStreamContext>(conn);
+                        stream_handler_(req, resp, ctx);
                     } else {
                         // Echo payload if no handler
                          if (req.has_payload()) {
@@ -57,7 +82,12 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
                          }
                     }
 
-                    // Send response
+                    // Send response ONLY if it was populated (and not just for async handling)
+                    // If stream_handler handled it entirely async (e.g. broadcast), resp might be empty/unused?
+                    // But typically request/response pattern expects a response.
+                    // If the handler didn't touch resp, we might still want to send something?
+                    // For now, we preserve existing behavior: send whatever is in resp.
+
                     std::string payload = resp.SerializeAsString();
                     uint32_t resp_len = htonl(static_cast<uint32_t>(payload.size()));
                     std::string frame;
@@ -66,8 +96,6 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
                     conn->Send(frame);
                 }
              } else {
-                 // Rate limited - drop or error?
-                 // For now just consume and drop
                  buf.Retrieve(4 + length);
              }
         } else {

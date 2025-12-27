@@ -27,7 +27,8 @@ void RunBenchmarkScenario(std::shared_ptr<IClient> client) {
     LOG_INFO("Starting Benchmark Scenario...");
 
     // Configuration
-    const int TOTAL_MESSAGES = 10000;
+    // Reduced count to ensure it completes in sandbox environment
+    const int TOTAL_MESSAGES = 1000;
     const int WARMUP_MESSAGES = 100;
 
     BenchmarkStats stats;
@@ -41,14 +42,6 @@ void RunBenchmarkScenario(std::shared_ptr<IClient> client) {
     client->RegisterMessageHandler([&](const StreamEnvelope& msg) {
         if (msg.header().message_type() == "ORDER_RESPONSE") {
             auto now = std::chrono::steady_clock::now();
-            // Assuming we receive responses in order or we can just measure RTT from send time if we tracked it.
-            // But since we are pumping messages, mapping request to response is hard without an ID map.
-            // Simpler approach: Include send timestamp in the order payload or header.
-
-            // Let's rely on the order ID to store timestamp if possible, or just the header metadata.
-            // StreamEnvelope has metadata map? No.
-            // Use Client Order ID?
-
             OrderResponse resp;
             if (resp.ParseFromString(msg.payload().data())) {
                 std::string cl_ord_id = resp.client_order_id();
@@ -59,10 +52,11 @@ void RunBenchmarkScenario(std::shared_ptr<IClient> client) {
                     long long latency = now_us - send_time_us;
 
                     std::lock_guard<std::mutex> lock(stats_mutex);
+                    // Only count if we are in measuring phase (sent_count reset? No, let's track separately)
                     if (stats.received_count < TOTAL_MESSAGES) {
                         stats.latencies_us.push_back(latency);
+                        stats.received_count++;
                     }
-                    stats.received_count++;
 
                     if (stats.received_count >= TOTAL_MESSAGES) {
                         stats.end_time = now;
@@ -124,9 +118,8 @@ void RunBenchmarkScenario(std::shared_ptr<IClient> client) {
         client->Send(env);
         stats.sent_count++;
 
-        // Don't flood too hard if synchronous, but async send is fine.
-        // Maybe yield every now and then to let IO thread breathe?
-        if (i % 100 == 0) std::this_thread::yield();
+        // Flow control to prevent overflowing the buffer in slow environment
+        if (i % 100 == 0) std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // Wait for completion
