@@ -1,0 +1,14 @@
+client:
+  name: "http-client"
+  network:
+    host: "127.0.0.1"
+    port: 80
+    protocol: "tcp"
+
+  protocols:
+    http:
+      enabled: true
+
+  observability:
+    logging:
+      level: "info"

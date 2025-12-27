@@ -9,11 +9,12 @@ using namespace networklib;
 
 void RunOrderPlacementScenario(std::shared_ptr<IClient> client);
 void RunMarketDataConsumerScenario(std::shared_ptr<IClient> client);
+void RunBenchmarkScenario(std::shared_ptr<IClient> client);
 
 int main(int argc, char** argv) {
     if (argc < 2) {
         std::cerr << "Usage: oms_client <config_path> [scenario]" << std::endl;
-        std::cerr << "Scenarios: order_placement, market_data" << std::endl;
+        std::cerr << "Scenarios: order_placement, market_data, benchmark" << std::endl;
         return 1;
     }
 
@@ -43,6 +44,8 @@ int main(int argc, char** argv) {
             RunOrderPlacementScenario(client);
         } else if (scenario == "market_data") {
             RunMarketDataConsumerScenario(client);
+        } else if (scenario == "benchmark") {
+            RunBenchmarkScenario(client);
         } else {
             while (true) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));

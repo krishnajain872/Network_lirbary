@@ -72,6 +72,7 @@ add_executable(oms_client
     oms_client/main.cpp
     oms_client/scenarios/order_placement.cpp
     oms_client/scenarios/market_data_consumer.cpp
+    oms_client/scenarios/benchmark.cpp
 )
 target_link_libraries(oms_client PRIVATE network)
 target_include_directories(oms_client PRIVATE core/include/networklib)

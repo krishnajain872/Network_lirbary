@@ -12,8 +12,9 @@ protected:
     void SetUp() override {
         std::ofstream out("int_server_config.yaml");
         out << "server:\n"
-            << "  protocol: tcp\n"
-            << "  port: 8085\n"
+            << "  mode: grpc\n"
+            << "  network:\n"
+            << "    port: 8085\n"
             << "logging:\n"
             << "  level: debug\n"
             << "  sinks:\n"
@@ -22,7 +23,7 @@ protected:
 
         std::ofstream out_c("int_client_config.yaml");
         out_c << "client:\n"
-              << "  mode: tcp\n"
+              << "  mode: grpc\n"
               << "  connection:\n"
               << "    host: 127.0.0.1\n"
               << "    port: 8085\n"
@@ -38,7 +39,7 @@ TEST_F(IntegrationTest, ConnectAndSend) {
     auto server = NetworkLib::CreateServer("int_server_config.yaml");
     ASSERT_NE(server, nullptr);
 
-    bool received = false;
+    std::atomic<bool> received{false};
     server->RegisterStreamHandler([&](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
         (void)resp; (void)ctx;
         received = true;
@@ -47,10 +48,7 @@ TEST_F(IntegrationTest, ConnectAndSend) {
         }
     });
 
-    std::thread server_thread([&]() {
-        server->Start();
-        server->Wait();
-    });
+    EXPECT_TRUE(server->Start());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -63,15 +61,20 @@ TEST_F(IntegrationTest, ConnectAndSend) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     StreamEnvelope env;
+    env.mutable_header()->set_message_type("TEST_MSG");
     env.mutable_payload()->set_data("Hello Integration");
 
     bool sent = client->Send(env);
     EXPECT_TRUE(sent);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    EXPECT_TRUE(received);
+    // Wait for processing
+    int retries = 0;
+    while (!received && retries < 20) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        retries++;
+    }
 
     server->Stop();
-    server_thread.join();
+
+    EXPECT_TRUE(received);
 }

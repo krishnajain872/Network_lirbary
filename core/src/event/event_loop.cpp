@@ -105,6 +105,10 @@ void EventLoop::Run() {
         LOG_ERROR("EventLoop::Run() called without Init()");
         return;
     }
+
+    // FIX: Update thread_id to the thread running the loop
+    thread_id_ = std::this_thread::get_id();
+
     LOG_INFO("Event loop starting");
     running_ = true;
     std::vector<Event> events;
