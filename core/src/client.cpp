@@ -70,6 +70,13 @@ bool Client::Connect() {
         });
     });
 
+    // Start the event loop thread
+    if (!loop_thread_.joinable()) {
+        loop_thread_ = std::thread([this]() {
+            loop_->Run();
+        });
+    }
+
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     return true;
 }
