@@ -15,7 +15,9 @@ protected:
             << "  protocol: tcp\n"
             << "  port: 8085\n"
             << "logging:\n"
-            << "  level: error\n";
+            << "  level: debug\n"
+            << "  sinks:\n"
+            << "    - type: console\n";
         out.close();
 
         std::ofstream out_c("int_client_config.yaml");
@@ -23,7 +25,11 @@ protected:
               << "  mode: tcp\n"
               << "  connection:\n"
               << "    host: 127.0.0.1\n"
-              << "    port: 8085\n";
+              << "    port: 8085\n"
+              << "logging:\n"
+              << "  level: debug\n"
+              << "  sinks:\n"
+              << "    - type: console\n";
         out_c.close();
     }
 };
@@ -53,10 +59,14 @@ TEST_F(IntegrationTest, ConnectAndSend) {
 
     EXPECT_TRUE(client->Connect());
 
+    // Wait for connection to be established (async connect)
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     StreamEnvelope env;
     env.mutable_payload()->set_data("Hello Integration");
 
-    client->Send(env);
+    bool sent = client->Send(env);
+    EXPECT_TRUE(sent);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 

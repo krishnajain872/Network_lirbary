@@ -138,6 +138,28 @@ void Connection::HandleRead() {
 
 void Connection::HandleWrite() {
     if (state_ == kDisconnected) return;
+
+    if (state_ == kConnecting) {
+        int error = 0;
+        socklen_t len = sizeof(error);
+        if (getsockopt(fd_, SOL_SOCKET, SO_ERROR, &error, &len) < 0 || error != 0) {
+            LOG(Error, "Async connect failed: %s", strerror(error != 0 ? error : errno));
+            HandleError();
+            return;
+        }
+
+        LOG(Info, "Async connect successful for fd %d", fd_);
+
+        if (ssl_) {
+            state_ = kHandshaking;
+            HandleHandshake();
+            return;
+        } else {
+            state_ = kConnected;
+            // Fall through to write any pending data (if any)
+        }
+    }
+
     if (state_ == kHandshaking) {
         HandleHandshake();
         return;

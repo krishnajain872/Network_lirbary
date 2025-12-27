@@ -2,4 +2,6 @@ server:
   protocol: tcp
   port: 8085
 logging:
-  level: error
+  level: debug
+  sinks:
+    - type: console
