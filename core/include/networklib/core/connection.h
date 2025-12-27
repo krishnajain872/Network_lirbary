@@ -34,9 +34,6 @@ public:
     // Client API
     utils::Result<void> Connect(const std::string& host, int port);
 
-    // Helper for Reactor
-    void SetConnected();
-
     // API for ProtocolHandlers
     void Send(const char* data, std::size_t len);
     void Send(const std::string& data);

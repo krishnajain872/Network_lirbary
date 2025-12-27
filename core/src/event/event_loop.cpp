@@ -105,10 +105,6 @@ void EventLoop::Run() {
         LOG_ERROR("EventLoop::Run() called without Init()");
         return;
     }
-
-    // FIX: Update thread_id to the thread running the loop
-    thread_id_ = std::this_thread::get_id();
-
     LOG_INFO("Event loop starting");
     running_ = true;
     std::vector<Event> events;
@@ -136,8 +132,10 @@ void EventLoop::Run() {
             std::shared_ptr<EventHandler> handler = it->second;
             if (handler && handler->callback) {
                 uint32_t flags = 0;
-                if (ev.events & 0x001) flags |= EPOLLIN;
-                if (ev.events & 0x004) flags |= EPOLLOUT;
+                if (ev.events & EPOLLIN) flags |= EPOLLIN;
+                if (ev.events & EPOLLOUT) flags |= EPOLLOUT;
+                if (ev.events & EPOLLERR) flags |= (EPOLLIN | EPOLLOUT);
+                if (ev.events & EPOLLHUP) flags |= (EPOLLIN | EPOLLOUT);
                 handler->callback(flags);
             }
         }

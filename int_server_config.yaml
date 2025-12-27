@@ -1,8 +1,9 @@
 server:
-  mode: grpc
+  mode: tcp
   network:
     port: 8085
+    protocol: tcp
 logging:
-  level: trace
-  output: file
-  file_path: server_debug.log
+  level: debug
+  sinks:
+    - type: console

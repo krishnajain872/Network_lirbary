@@ -51,7 +51,8 @@ bool Client::Connect() {
     }
 
     // Register FD before Connect to ensure we don't miss events if Connect completes immediately
-    loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
+    // Use Level Triggered (no EPOLLET) initially to ensure we get EPOLLOUT for connection completion
+    loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT, [this](uint32_t events) {
         if (events & EPOLLIN) connection_->HandleRead();
         if (events & EPOLLOUT) connection_->HandleWrite();
     });
@@ -62,12 +63,8 @@ bool Client::Connect() {
         return false;
     }
 
-    // FIX: AddFd must be called in loop thread to avoid race on handlers_ map
-    loop_->RunInLoop([this]() {
-        loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET, [this](uint32_t events) {
-            if (events & EPOLLIN) connection_->HandleRead();
-            if (events & EPOLLOUT) connection_->HandleWrite();
-        });
+    loop_thread_ = std::thread([this]() {
+        loop_->Run();
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

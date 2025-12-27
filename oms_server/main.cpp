@@ -127,9 +127,7 @@ int main(int argc, char** argv) {
                 Order order;
                 if (order.ParseFromString(req.payload().data())) {
                     OrderResponse or_resp = order_manager.PlaceOrder(order);
-                    // Write back to resp
-                    resp.mutable_header()->set_message_type("ORDER_RESPONSE");
-                    resp.mutable_payload()->set_data(or_resp.SerializeAsString());
+                    // In real app, write back to resp or ctx
                 }
             }
         });

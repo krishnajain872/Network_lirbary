@@ -84,7 +84,6 @@ utils::Result<void> Reactor::RegisterServer(int port,
                 }
 
                 auto conn = std::make_shared<Connection>(loop_ptr, client_fd);
-                conn->SetConnected(); // Fix: Mark accepted connection as connected
                 
                 if (tls_context_) {
                     SSL* ssl = tls_context_->CreateSsl();
