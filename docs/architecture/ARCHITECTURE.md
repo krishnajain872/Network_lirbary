@@ -82,22 +82,54 @@ To decouple the network transport from the business logic, all messages are wrap
 
 ### Server Startup Sequence
 
-1.  `NetworkLib::CreateServer()` parses config.
-2.  `Server` instance created.
-3.  `Server::Start()` initializes `Reactor` and `EventLoop`.
-4.  `Reactor::RegisterServer()` binds the listening port.
-5.  `Server` thread starts running `EventLoop::Run()`.
+```mermaid
+sequenceDiagram
+    participant Main as Main
+    participant Lib as NetworkLib
+    participant Server as Server
+    participant Reactor as Reactor
+    participant Loop as EventLoop
+
+    Main->>Lib: CreateServer(config)
+    Lib->>Server: new Server(config)
+    Main->>Server: RegisterStreamHandler(callback)
+    Main->>Server: Start()
+    Server->>Reactor: new Reactor()
+    Reactor->>Loop: new EventLoop()
+    Server->>Reactor: RegisterServer(port)
+    Reactor->>Loop: AddFd(listen_socket)
+    Server->>Loop: Run() (in new thread)
+    Note right of Loop: Blocks on epoll_wait
+```
 
 ### Message Processing Flow
 
-1.  **I/O Event**: `EpollPoller` detects data on a client socket.
-2.  **Dispatch**: `EventLoop` calls `Connection::OnRead()`.
-3.  **Protocol**: `ProtocolHandler` reads bytes, constructs `StreamEnvelope`.
-4.  **Callback**: `ProtocolHandler` calls the registered `StreamHandler` (in `oms_server/main.cpp`).
-5.  **Logic**: `OrderManager` processes the order.
-6.  **Response**: `OrderManager` returns a response `StreamEnvelope`.
-7.  **Write**: Response is serialized and written to the `Connection` buffer.
-8.  **Output**: `EventLoop` handles `EPOLLOUT` to send data.
+```mermaid
+sequenceDiagram
+    participant OS as OS (Epoll)
+    participant Loop as EventLoop
+    participant Conn as Connection
+    participant Proto as ProtocolHandler
+    participant App as OMS Application
+
+    OS->>Loop: Event: Data Available (EPOLLIN)
+    Loop->>Conn: OnRead()
+    Conn->>Conn: Read bytes to buffer
+    Conn->>Proto: OnMessage(conn)
+    Proto->>Proto: Parse Frame -> StreamEnvelope
+    Proto->>App: StreamHandler(envelope)
+
+    Note right of App: Process Order
+
+    App-->>Proto: Response Envelope
+    Proto->>Conn: Write(response_bytes)
+    Conn->>Loop: Enable EPOLLOUT (if needed)
+
+    Loop->>OS: Event: Ready to Write (EPOLLOUT)
+    OS->>Loop: Callback
+    Loop->>Conn: OnWrite()
+    Conn->>OS: send() data
+```
 
 ## Technology Decisions
 
