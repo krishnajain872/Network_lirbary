@@ -37,8 +37,11 @@ int main(int argc, char** argv) {
         LOG_INFO("Connected!");
 
         client->RegisterMessageHandler([](const StreamEnvelope& msg) {
-             (void)msg;
-             LOG_INFO("Received message from server");
+             if (msg.has_header()) {
+                 LOG_INFO("Received message type: %s", msg.header().message_type().c_str());
+             } else {
+                 LOG_INFO("Received message (no header)");
+             }
         });
 
         if (scenario == "order_placement") {
@@ -48,8 +51,11 @@ int main(int argc, char** argv) {
         } else if (scenario == "benchmark") {
             RunBenchmarkScenario(client);
         } else {
-            while (true) {
+            // Interactive or keep alive
+            int count = 0;
+            while (count < 5) { // Just run for 5 seconds then exit to avoid hanging
                 std::this_thread::sleep_for(std::chrono::seconds(1));
+                count++;
             }
         }
 

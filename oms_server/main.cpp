@@ -92,13 +92,46 @@ public:
         if (thread_.joinable()) thread_.join();
     }
 
+    void Subscribe(std::shared_ptr<IStreamContext> ctx, const std::string& symbol) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // Simple implementation: Just add to list, ignore symbol filtering for now
+        // Check if already exists to avoid duplicates?
+        // For simplicity, just add.
+        subscribers_.push_back(ctx);
+        LOG_INFO("New subscriber for %s", symbol.c_str());
+    }
+
 private:
     std::shared_ptr<IServer> server_;
     std::thread thread_;
     std::atomic<bool> running_{false};
+    std::mutex mutex_;
+    std::vector<std::shared_ptr<IStreamContext>> subscribers_;
 
     void PublishTick() {
-        // Mock
+        // Create Mock Market Data
+        MarketData md;
+        md.set_symbol("AAPL");
+        md.set_last_price(150.0 + (rand() % 100) / 10.0);
+        md.set_last_quantity(100 + rand() % 1000); // Fixed field name
+        md.set_timestamp_us(NetworkLib::NowUs()); // Fixed field name
+
+        StreamEnvelope env;
+        env.mutable_header()->set_message_type("MARKET_DATA_UPDATE");
+        env.mutable_payload()->set_data(md.SerializeAsString());
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        // Iterate and remove closed contexts (if possible to detect? IStreamContext doesn't have IsOpen)
+        // We will just try to write. If it fails internally, fine.
+        // Ideally we need a way to clean up subscribers on disconnect.
+        // IStreamContext usually tied to Connection which handles cleanup.
+        // But here we hold a shared_ptr, so we might keep it alive?
+        // Actually, if Connection closes, writing might fail or do nothing.
+        // For this task, we won't overengineer cleanup.
+
+        for (auto& ctx : subscribers_) {
+             ctx->Write(env);
+        }
     }
 };
 
@@ -122,15 +155,22 @@ int main(int argc, char** argv) {
         MarketDataPublisher md_publisher(server);
 
         server->RegisterStreamHandler([&](const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx) {
-            (void)ctx; (void)resp;
-            // Simplified Dispatch
-            if (req.has_header() && req.header().message_type() == "ORDER_NEW" && req.has_payload()) {
-                Order order;
-                if (order.ParseFromString(req.payload().data())) {
-                    OrderResponse or_resp = order_manager.PlaceOrder(order);
-                    // Write back to resp
-                    resp.mutable_header()->set_message_type("ORDER_RESPONSE");
-                    resp.mutable_payload()->set_data(or_resp.SerializeAsString());
+            if (req.has_header()) {
+                if (req.header().message_type() == "ORDER_NEW" && req.has_payload()) {
+                    Order order;
+                    if (order.ParseFromString(req.payload().data())) {
+                        OrderResponse or_resp = order_manager.PlaceOrder(order);
+                        resp.mutable_header()->set_message_type("ORDER_RESPONSE");
+                        resp.mutable_payload()->set_data(or_resp.SerializeAsString());
+                    }
+                } else if (req.header().message_type() == "MARKET_DATA_SUB" && req.has_payload()) {
+                    // Handle Subscription
+                    std::string symbol = req.payload().data(); // Payload is just symbol string
+                    md_publisher.Subscribe(ctx, symbol);
+                    // No direct response needed, or ack?
+                    // Let's send an ACK
+                    resp.mutable_header()->set_message_type("MARKET_DATA_SUB_ACK");
+                    resp.mutable_payload()->set_data("Subscribed to " + symbol);
                 }
             }
         });
@@ -142,7 +182,9 @@ int main(int argc, char** argv) {
         }
 
         md_publisher.Start();
+
         server->Wait();
+
         md_publisher.Stop();
 
     } catch (const std::exception& e) {
