@@ -1,7 +1,7 @@
 #pragma once
 
-#include "logger_config.h"
-#include "sinks/log_sink.h"
+#include "logger/log_common.h"
+#include "logger/sinks/log_sink.h"
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -44,6 +44,8 @@ public:
   size_t GetQueueSize() const;
   size_t GetDroppedCount() const;
   size_t GetProcessedCount() const;
+
+  const LoggerConfig& GetConfig() const { return config_; }
 
 private:
   void WorkerThread();

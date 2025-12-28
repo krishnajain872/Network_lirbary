@@ -1,5 +1,5 @@
 #include "logger/log_formatter.h"
-#include "logger/json.h"
+#include "logger/json.hpp"
 #include <sstream>
 #include <iomanip>
 

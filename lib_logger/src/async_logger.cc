@@ -1,8 +1,8 @@
-#include "async_logger.h"
-#include "sinks/console_sink.h"
-#include "sinks/file_sink.h"
-#include "sinks/kafka_sink.h"
-#include "sinks/syslog_sink.h"
+#include "logger/async_logger.h"
+#include "logger/sinks/console_sink.h"
+#include "logger/sinks/file_sink.h"
+#include "logger/sinks/kafka_sink.h"
+#include "logger/sinks/syslog_sink.h"
 #include <algorithm>
 
 

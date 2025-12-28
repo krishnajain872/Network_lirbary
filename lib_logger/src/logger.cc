@@ -1,6 +1,6 @@
 #include "logger/logging.h"
-#include "async_logger.h"
-#include "log_manager.h"
+#include "logger/async_logger.h"
+#include "logger/log_manager.h"
 #include <cstdarg>
 #include <cstdio>
 #include <thread>
@@ -52,12 +52,17 @@ void logging::Logger::Deinitialize() {
 }
 
 bool logging::Logger::IsLevelEnabled(logging::LogLevel level) {
-    return true;
+    return level >= logging::LogManager::Instance().GetDefaultSeverity();
 }
 
 void logging::Logger::Log(logging::LogLevel level, const char* file, int line, const char* func, const char* format, ...) {
     auto logger = logging::LogManager::Instance().GetLogger();
     if (!logger) return;
+
+    // Filter by severity
+    if (level < logger->GetConfig().severity) {
+        return;
+    }
 
     logging::LogEntry entry;
     entry.timestamp = std::chrono::system_clock::now();
@@ -74,9 +79,21 @@ void logging::Logger::Log(logging::LogLevel level, const char* file, int line, c
     char buffer[4096];
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
+    int ret = vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    entry.message = buffer;
+
+    if (ret >= 0) {
+        if (static_cast<size_t>(ret) < sizeof(buffer)) {
+            entry.message = buffer;
+        } else {
+            // Buffer too small, allocate dynamically
+            std::vector<char> dyn_buffer(ret + 1);
+            va_start(args, format);
+            vsnprintf(dyn_buffer.data(), dyn_buffer.size(), format, args);
+            va_end(args);
+            entry.message = dyn_buffer.data();
+        }
+    }
 
     logger->Enqueue(std::move(entry));
 }
@@ -90,6 +107,11 @@ void logging::Logger::LogApp(const char* app_name, logging::LogLevel level, cons
         // If not found, let's try default.
         logger = logging::LogManager::Instance().GetLogger();
         if (!logger) return;
+    }
+
+    // Filter by severity
+    if (level < logger->GetConfig().severity) {
+        return;
     }
 
     logging::LogEntry entry;
@@ -108,9 +130,21 @@ void logging::Logger::LogApp(const char* app_name, logging::LogLevel level, cons
     char buffer[4096];
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
+    int ret = vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    entry.message = buffer;
+
+    if (ret >= 0) {
+        if (static_cast<size_t>(ret) < sizeof(buffer)) {
+            entry.message = buffer;
+        } else {
+            // Buffer too small, allocate dynamically
+            std::vector<char> dyn_buffer(ret + 1);
+            va_start(args, format);
+            vsnprintf(dyn_buffer.data(), dyn_buffer.size(), format, args);
+            va_end(args);
+            entry.message = dyn_buffer.data();
+        }
+    }
 
     logger->Enqueue(std::move(entry));
 }

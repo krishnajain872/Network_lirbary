@@ -64,6 +64,18 @@ void LogManager::Shutdown() {
     default_app_name_.clear();
 }
 
+LogLevel LogManager::GetDefaultSeverity() const {
+    // Return default severity if no logger is initialized
+    if (loggers_.empty() && default_app_name_.empty()) return LogLevel::Info;
+
+    // Use default logger if available
+    auto it = loggers_.find(default_app_name_);
+    if (it != loggers_.end() && it->second) {
+        return it->second->GetConfig().severity;
+    }
+    return LogLevel::Info;
+}
+
 LogManager::LogManager() = default;
 LogManager::~LogManager() { Shutdown(); }
 
