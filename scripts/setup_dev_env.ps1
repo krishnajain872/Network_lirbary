@@ -41,13 +41,17 @@ Write-Host "   1. Open this folder in VS Code."
 Write-Host "   2. Press F1 → 'Dev Containers: Reopen in Container'."
 Write-Host "--------------------------------------------------------"
 Write-Host "OPTION 2: Manual SSH Connection"
-Write-Host "docker run -d -p 2222:22 --name network-dev \"
-Write-Host "  --cap-add=SYS_PTRACE \"
-Write-Host "  --security-opt seccomp=unconfined \"
-Write-Host "  -v `"$RepoRoot:/workspaces/network-library`" \"
-Write-Host "  network-lib-dev"
+
+$dockerCmd = @"
+docker run -d -p 2222:22 --name network-dev `
+  --cap-add=SYS_PTRACE `
+  --security-opt seccomp=unconfined `
+  -v "${RepoRoot}:/workspaces/network-library" `
+  network-lib-dev
+"@
+
+Write-Host $dockerCmd
 Write-Host "Connect via SSH (password: root):"
 Write-Host "ssh -p 2222 root@localhost"
-Write-Host ""
 Write-Host "--------------------------------------------------------"
-
+Write-Host "Happy Coding!" -ForegroundColor Cyan
