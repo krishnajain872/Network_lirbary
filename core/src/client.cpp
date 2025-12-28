@@ -48,6 +48,28 @@ bool Client::Connect() {
   connect_promise_ = std::promise<bool>();
   auto future = connect_promise_.get_future();
 
+  connection_->SetConnectCallback([this](bool success) {
+    connect_promise_.set_value(success);
+  });
+
+  // Start the event loop thread
+  if (!loop_thread_.joinable()) {
+    // #region agent log
+    {
+      std::ofstream log(".cursor/debug.log", std::ios::app);
+      auto t = std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::system_clock::now().time_since_epoch())
+                   .count();
+      log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\","
+             "\"hypothesisId\":\"D\",\"location\":\"client.cpp:67\","
+             "\"message\":\"Starting event loop "
+             "thread\",\"data\":{},\"timestamp\":"
+          << t << "}\n";
+    }
+    // #endregion
+    loop_thread_ = std::thread([this]() { loop_->Run(); });
+  }
+
   // Initialize Protocol Strategy
   protocol_ = client::ClientProtocolFactory::Create(config_.mode);
   protocol_->OnConnect(connection_);
@@ -117,55 +139,7 @@ bool Client::Connect() {
     return false;
   }
 
-  // Start the event loop thread
-  if (!loop_thread_.joinable()) {
-    // #region agent log
-    {
-      std::ofstream log(".cursor/debug.log", std::ios::app);
-      auto t = std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::system_clock::now().time_since_epoch())
-                   .count();
-      log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\","
-             "\"hypothesisId\":\"D\",\"location\":\"client.cpp:67\","
-             "\"message\":\"Starting event loop "
-             "thread\",\"data\":{},\"timestamp\":"
-          << t << "}\n";
-    }
-    // #endregion
-    loop_thread_ = std::thread([this]() { loop_->Run(); });
-  }
-
-  // #region agent log
-  {
-    std::ofstream log(".cursor/debug.log", std::ios::app);
-    auto t = std::chrono::duration_cast<std::chrono::milliseconds>(
-                 std::chrono::system_clock::now().time_since_epoch())
-                 .count();
-    bool connState = connection_->IsConnected();
-    log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\","
-           "\"hypothesisId\":\"B\",\"location\":\"client.cpp:73\",\"message\":"
-           "\"Before sleep, connection state check\",\"data\":{\"isConnected\":"
-        << (connState ? "true" : "false") << "},\"timestamp\":" << t << "}\n";
-  }
-  // #endregion
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-  // #region agent log
-  {
-    std::ofstream log(".cursor/debug.log", std::ios::app);
-    auto t = std::chrono::duration_cast<std::chrono::milliseconds>(
-                 std::chrono::system_clock::now().time_since_epoch())
-                 .count();
-    bool connState = connection_->IsConnected();
-    log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\","
-           "\"hypothesisId\":\"B\",\"location\":\"client.cpp:76\",\"message\":"
-           "\"After sleep, returning from Connect\",\"data\":{\"isConnected\":"
-        << (connState ? "true" : "false") << "},\"timestamp\":" << t << "}\n";
-  }
-  // #endregion
-
-  return true;
+  return future.get();
 }
 
 void Client::Disconnect() {
