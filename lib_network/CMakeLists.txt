@@ -1,32 +1,51 @@
-cmake_minimum_required(VERSION 3.16)
+# ============================================================
+# Network Library (lib_network)
+# ============================================================
 
-# Collect sources
-file(GLOB_RECURSE NETWORK_SOURCES src/*.cc)
+file(GLOB_RECURSE NETWORK_SOURCES
+    ${PROJECT_SOURCE_DIR}/lib_network/src/*.cc
+)
 
-# Define library
-add_library(network SHARED ${NETWORK_SOURCES})
+add_library(network SHARED
+    ${NETWORK_SOURCES}
+)
 
 # Include directories
-target_include_directories(network PUBLIC
-    include
-    ${CMAKE_SOURCE_DIR}/lib_logger/include
-    ${CMAKE_SOURCE_DIR}/api/gen
+target_include_directories(network
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/lib_network/include
+        ${PROJECT_SOURCE_DIR}/gen          # protobuf headers
 )
 
-# Dependencies
-target_link_libraries(network PUBLIC
-    logger
-    protos
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    yaml-cpp
-    ${Protobuf_LIBRARIES}
+# Link dependencies
+target_link_libraries(network
+    PUBLIC
+        protos
+        logger
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        yaml-cpp
+        PkgConfig::liburing   # io_uring support
 )
 
-# Install
-install(TARGETS network
+# Output directories
+set_target_properties(network protos PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+# Installation
+install(TARGETS network protos
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
-install(DIRECTORY include/network DESTINATION include)
+
+install(DIRECTORY lib_network/include/
+    DESTINATION include
+)
+
+install(DIRECTORY gen/
+    DESTINATION include
+)

@@ -2,7 +2,7 @@ client:
   mode: "tcp"
   connection:
     host: "127.0.0.1"
-    port: 8080
+    port: 7000
   ssl:
     enabled: false
 

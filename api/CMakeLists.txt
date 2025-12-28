@@ -2,39 +2,64 @@ cmake_minimum_required(VERSION 3.16)
 
 find_package(Protobuf REQUIRED)
 
-set(PROTO_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/proto")
-set(PROTO_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/gen")
+set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/proto)
+set(PROTO_GEN_DIR ${PROJECT_SOURCE_DIR}/gen)
 
 file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 
-file(GLOB PROTO_FILES "${PROTO_SRC_DIR}/*.proto")
-
-if(PROTO_FILES STREQUAL "")
-    message(FATAL_ERROR "No .proto files found in ${PROTO_SRC_DIR}")
-endif()
-
-protobuf_generate_cpp(
-    PROTO_SRCS
-    PROTO_HDRS
-    ${PROTO_FILES}
+file(GLOB PROTO_FILES
+    ${PROTO_SRC_DIR}/*.proto
 )
 
-# Create a library for the generated code
-add_library(protos STATIC ${PROTO_SRCS} ${PROTO_HDRS})
+set(GENERATED_SRCS)
+set(GENERATED_HDRS)
 
-# Ensure Position Independent Code for linking into shared libraries
-set_property(TARGET protos PROPERTY POSITION_INDEPENDENT_CODE ON)
+foreach(proto ${PROTO_FILES})
+    get_filename_component(proto_name ${proto} NAME_WE)
 
-# Debugging: Print where we expect headers to be
-message(STATUS "PROTO_GEN_DIR: ${PROTO_GEN_DIR}")
+    list(APPEND GENERATED_SRCS
+        ${PROTO_GEN_DIR}/${proto_name}.pb.cc
+    )
 
-target_include_directories(protos PUBLIC
-    ${PROTO_GEN_DIR}
-    ${PROTO_GEN_DIR}/proto
-    ${PROTO_GEN_DIR}/api/proto
-    ${Protobuf_INCLUDE_DIR}
+    list(APPEND GENERATED_HDRS
+        ${PROTO_GEN_DIR}/${proto_name}.pb.h
+    )
+endforeach()
+
+add_custom_command(
+    OUTPUT ${GENERATED_SRCS} ${GENERATED_HDRS}
+    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+    ARGS
+        --cpp_out=${PROTO_GEN_DIR}
+        -I ${PROTO_SRC_DIR}
+        ${PROTO_FILES}
+    DEPENDS ${PROTO_FILES}
+    COMMENT "Generating protobuf sources into gen/"
 )
 
-target_link_libraries(protos PUBLIC
-    protobuf::libprotobuf
+add_library(protos STATIC
+    ${GENERATED_SRCS}
+    ${GENERATED_HDRS}
+)
+
+# Make static library position independent
+set_target_properties(protos PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+set_source_files_properties(
+    ${GENERATED_SRCS} ${GENERATED_HDRS}
+    PROPERTIES GENERATED TRUE
+)
+
+target_include_directories(protos
+    PUBLIC
+        ${PROTO_GEN_DIR}
+)
+
+target_link_libraries(protos
+    PUBLIC
+        protobuf::libprotobuf
+)
+
+set_target_properties(protos PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 )
