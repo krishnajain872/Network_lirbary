@@ -1,4 +1,4 @@
-#include "log_common.h"
+#include "logger/log_common.h"
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -108,6 +108,7 @@ LoggerConfig ParseConfig(const char* config_string) {
         else if (key == "flush_interval") config.flush_interval = ParseDuration(value);
         else if (key == "buffer_size") try { config.buffer_size = std::stoull(value); } catch(...) {}
         else if (key == "batch_size") try { config.batch_size = std::stoull(value); } catch(...) {}
+        else if (key == "overflow_policy") config.overflow_policy = value;
     }
     return config;
 }

@@ -3,13 +3,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "logger/logging.h"
+#include "logger/log_common.h"
 
 namespace networklib {
 namespace logging {
 
-enum class LogLevel { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
-
-struct LogEntry; // Forward declaration
+// LogLevel is defined in logging.h
+// LogEntry is defined in log_common.h
 
 class LogSink {
 public:

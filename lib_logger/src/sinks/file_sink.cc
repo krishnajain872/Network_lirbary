@@ -50,15 +50,29 @@ void FileSink::Rotate() {
     Close();
     // Rotation logic (rename files)
     // file.log -> file.log.1, file.log.1 -> file.log.2, etc.
-    // For simplicity in this iteration, just rename current to .1 and overwrite
     try {
-        std::string backup = path_ + ".1";
-        if (std::filesystem::exists(backup)) {
-            std::filesystem::remove(backup);
+        // Remove the oldest backup if it exists
+        if (max_backups_ > 0) {
+             std::string oldest = path_ + "." + std::to_string(max_backups_);
+             if (std::filesystem::exists(oldest)) {
+                 std::filesystem::remove(oldest);
+             }
         }
-        std::filesystem::rename(path_, backup);
+
+        // Shift existing backups: n-1 -> n
+        for (int i = max_backups_ - 1; i >= 1; --i) {
+            std::string src = path_ + "." + std::to_string(i);
+            std::string dst = path_ + "." + std::to_string(i + 1);
+            if (std::filesystem::exists(src)) {
+                std::filesystem::rename(src, dst);
+            }
+        }
+
+        // Rename current file to .1
+        std::string first_backup = path_ + ".1";
+        std::filesystem::rename(path_, first_backup);
     } catch (...) {
-        // best effort
+        // best effort, maybe log to stderr
     }
     Open();
 }

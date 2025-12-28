@@ -27,3 +27,12 @@ install(TARGETS logger
     RUNTIME DESTINATION bin
 )
 install(DIRECTORY include/logger DESTINATION include)
+
+if (BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    add_executable(logger_test tests/logger_test.cc)
+    target_link_libraries(logger_test PRIVATE logger GTest::gtest_main)
+    target_include_directories(logger_test PRIVATE include)
+    add_test(NAME logger_test COMMAND logger_test)
+endif()

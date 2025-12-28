@@ -17,6 +17,9 @@ public:
     std::shared_ptr<AsyncLogger> GetLogger(const std::string& app_name = "");
     void Shutdown();
 
+    // Helper to get the default logger's severity
+    LogLevel GetDefaultSeverity() const;
+
 private:
     LogManager();
     ~LogManager();

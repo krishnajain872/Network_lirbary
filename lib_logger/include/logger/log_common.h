@@ -68,6 +68,7 @@ struct LoggerConfig {
     std::chrono::milliseconds flush_interval{1000};
     size_t buffer_size = 4096;
     size_t batch_size = 100;
+    std::string overflow_policy = "discard_newest"; // block, discard_oldest, discard_newest
 };
 
 LoggerConfig ParseConfig(const char* config_string);
