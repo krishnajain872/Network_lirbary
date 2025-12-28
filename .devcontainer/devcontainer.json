@@ -5,32 +5,42 @@
         "dockerfile": "Dockerfile",
         "context": "..",
         "args": {
-            "BUILDKIT_INLINE_CACHE": "1"
+            "BUILDKIT_INLINE_CACHE": "1",
+            "DOCKER_BUILDKIT": "1"
         },
         "cacheFrom": [
             "network-library-dev:latest"
         ]
     },
 
-    /* =====================================================
-       🔑 CRITICAL: DO NOT OVERRIDE CMD (allows sshd to run)
-       ===================================================== */
-    "overrideCommand": false,
-
     "customizations": {
         "vscode": {
             "extensions": [
+                // C/C++
                 "ms-vscode.cpptools",
                 "ms-vscode.cmake-tools",
                 "twxs.cmake",
+
+                // Go
                 "golang.go",
+
+                // Node/Frontend (only if needed)
+                // "dbaeumer.vscode-eslint",
+                // "esbenp.prettier-vscode",
+
+                // Python (only if needed)
+                // "ms-python.python",
+
+                // Productivity
                 "eamodio.gitlens",
                 "usernamehw.errorlens"
             ],
 
             "settings": {
+                // Terminal
                 "terminal.integrated.defaultProfile.linux": "bash",
 
+                // CMake
                 "cmake.configureOnOpen": false,
                 "cmake.generator": "Ninja",
                 "cmake.buildDirectory": "${workspaceFolder}/build",
@@ -43,6 +53,7 @@
                 "cmake.parallelJobs": 0,
                 "cmake.buildBeforeRun": true,
 
+                // C/C++
                 "C_Cpp.intelliSenseEngine": "default",
                 "C_Cpp.default.compilerPath": "/usr/bin/g++-12",
                 "C_Cpp.default.cppStandard": "c++20",
@@ -51,6 +62,7 @@
                 "C_Cpp.codeAnalysis.clangTidy.enabled": false,
                 "C_Cpp.enhancedColorization": "enabled",
 
+                // Go
                 "go.useLanguageServer": true,
                 "go.gopath": "/go",
                 "go.toolsManagement.autoUpdate": false,
@@ -58,13 +70,17 @@
                 "go.lintOnSave": "workspace",
                 "go.formatTool": "goimports",
                 "go.testFlags": ["-v"],
+                "go.coverOnSave": false,
 
+                // Editor
                 "editor.formatOnSave": true,
+                "editor.formatOnPaste": false,
                 "editor.tabSize": 4,
                 "editor.insertSpaces": true,
                 "editor.detectIndentation": false,
                 "editor.rulers": [80, 120],
 
+                // Files
                 "files.associations": {
                     "*.h": "c",
                     "*.hpp": "cpp"
@@ -79,26 +95,30 @@
                     "**/node_modules/**": true,
                     "**/.git/objects/**": true
                 },
+                "files.trimTrailingWhitespace": true,
+                "files.insertFinalNewline": true,
 
+                // Search
                 "search.exclude": {
                     "**/build": true,
                     "**/node_modules": true,
                     "**/.git": true
                 },
 
+                // Git
                 "git.autofetch": true,
                 "git.confirmSync": false,
+
+                // Performance
                 "telemetry.telemetryLevel": "off"
             }
         }
     },
 
-    /* =====================================================
-       🧠 DEBUGGING + PERF FLAGS (NO HOST NETWORK)
-       ===================================================== */
     "runArgs": [
         "--cap-add=SYS_PTRACE",
         "--security-opt=seccomp=unconfined",
+        "--network=host",
         "--init"
     ],
 
@@ -108,13 +128,9 @@
         "type=volume,source=network-lib-ccache,target=/workspaces/network-library/.ccache"
     ],
 
-    "forwardPorts": [22, 8080, 50051, 9090],
+    "forwardPorts": [8080, 50051, 9090],
 
     "portsAttributes": {
-        "22": {
-            "label": "SSH",
-            "onAutoForward": "silent"
-        },
         "8080": {
             "label": "HTTP Server",
             "onAutoForward": "notify"
@@ -130,11 +146,9 @@
     },
 
     "postCreateCommand": "mkdir -p build && echo '✅ Dev container ready! Run: cd build && cmake .. && ninja'",
+
     "postStartCommand": "git config --global --add safe.directory /workspaces/network-library",
 
-    /* =====================================================
-       👤 USE ROOT (matches sshd + tooling)
-       ===================================================== */
     "remoteUser": "root",
     "workspaceFolder": "/workspaces/network-library",
 
