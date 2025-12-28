@@ -18,6 +18,8 @@ public:
     void Write(const StreamEnvelope& msg) override {
         if (auto conn = conn_.lock()) {
             std::string payload = msg.SerializeAsString();
+            if (payload.empty()) return; // Don't send empty frames
+
             uint32_t resp_len = htonl(static_cast<uint32_t>(payload.size()));
             std::string frame;
             frame.append(reinterpret_cast<const char*>(&resp_len), sizeof(resp_len));
@@ -50,7 +52,8 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
         length = ntohl(length);
 
         if (length > 100 * 1024 * 1024) { // Sanity check
-             buf.RetrieveAll();
+             LOG_ERROR("Invalid message length %u. Closing connection.", length);
+             conn->ForceClose(); // Force close to prevent desync
              return;
         }
 
@@ -71,8 +74,6 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
 
                     if (stream_handler_) {
                         // Create a context for this connection
-                        // Note: Creating a new shared_ptr every time is inefficient but safe for now.
-                        // Ideally we should cache it in the Connection context or similar.
                         auto ctx = std::make_shared<TcpStreamContext>(conn);
                         stream_handler_(req, resp, ctx);
                     } else {
@@ -82,20 +83,22 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
                          }
                     }
 
-                    // Send response ONLY if it was populated (and not just for async handling)
-                    // If stream_handler handled it entirely async (e.g. broadcast), resp might be empty/unused?
-                    // But typically request/response pattern expects a response.
-                    // If the handler didn't touch resp, we might still want to send something?
-                    // For now, we preserve existing behavior: send whatever is in resp.
-
-                    std::string payload = resp.SerializeAsString();
-                    uint32_t resp_len = htonl(static_cast<uint32_t>(payload.size()));
-                    std::string frame;
-                    frame.append(reinterpret_cast<const char*>(&resp_len), sizeof(resp_len));
-                    frame.append(payload);
-                    conn->Send(frame);
+                    // Send response ONLY if it has content (header or payload)
+                    if (resp.has_header() || resp.has_payload() || resp.ByteSizeLong() > 0) {
+                        std::string payload = resp.SerializeAsString();
+                        if (!payload.empty()) {
+                            uint32_t resp_len = htonl(static_cast<uint32_t>(payload.size()));
+                            std::string frame;
+                            frame.append(reinterpret_cast<const char*>(&resp_len), sizeof(resp_len));
+                            frame.append(payload);
+                            conn->Send(frame);
+                        }
+                    }
                 }
              } else {
+                 // Rate Limited
+                 // Use Fd instead of PeerAddress since PeerAddress doesn't exist
+                 LOG_WARN("Rate limit exceeded for fd %d. Dropping message.", conn->Fd());
                  buf.Retrieve(4 + length);
              }
         } else {
