@@ -254,6 +254,9 @@ void Connection::HandleWrite() {
       return;
     }
     state_ = kConnected;
+    if (connect_callback_) {
+      connect_callback_(true);
+    }
     // #region agent log
     {
       std::ofstream log(".cursor/debug.log", std::ios::app);
@@ -326,6 +329,10 @@ void Connection::HandleClose() {
 void Connection::HandleError() {
   if (state_ == kDisconnected) {
     return; // Already closed, prevent multiple calls
+  }
+
+  if (state_ == kConnecting && connect_callback_) {
+    connect_callback_(false);
   }
 
   LOG(Error, "Connection error on fd %d", fd_);

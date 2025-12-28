@@ -8,6 +8,7 @@
 #include "networklib/core/memory/buffer.h"
 #include "networklib/core/event/event_loop.h"
 #include "networklib/core/resilience/token_bucket.h"
+#include "networklib/utils/result.h"
 
 namespace networklib {
 namespace core {
@@ -16,6 +17,7 @@ class Connection : public std::enable_shared_from_this<Connection> {
 public:
     using Ptr = std::shared_ptr<Connection>;
     using DisconnectCallback = std::function<void(const Ptr&)>;
+    using ConnectCallback = std::function<void(bool)>;
 
     Connection(event::EventLoop* loop, int fd);
     ~Connection();
@@ -60,10 +62,7 @@ public:
 
     using MessageCallback = std::function<void(const Ptr&)>;
     void SetMessageCallback(const MessageCallback& cb) { message_callback_ = cb; }
-
-    // This needs to be public so ProtocolHandler can access it? 
-    // Or better, ProtocolHandler methods take ConnectionPtr.
-    // For Phase 5, we'll keep it simple.
+    void SetConnectCallback(const ConnectCallback& cb) { connect_callback_ = cb; }
 
 private:
     enum State { kConnecting, kHandshaking, kConnected, kDisconnecting, kDisconnected };
@@ -87,6 +86,7 @@ private:
     std::any context_;
     DisconnectCallback disconnect_callback_;
     MessageCallback message_callback_;
+    ConnectCallback connect_callback_;
 };
 
 } // namespace core
