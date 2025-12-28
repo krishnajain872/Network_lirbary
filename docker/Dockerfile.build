@@ -47,13 +47,17 @@ WORKDIR /build
 # =====================================================
 FROM builder-base AS source-builder
 
-# Optimize caching: Copy only CMake files first
+# Optimize caching: Copy CMake files first
 COPY CMakeLists.txt /src/CMakeLists.txt
-COPY core/include /src/core/include
-COPY protocols/proto /src/protocols/proto
-# We need basic source structure for CMake to configure, but minimal files
-# This is hard to perfect without listing every file, so we stick to COPY . /src
-# but we rely on ccache for speed.
+COPY api/CMakeLists.txt /src/api/CMakeLists.txt
+COPY lib_logger/CMakeLists.txt /src/lib_logger/CMakeLists.txt
+COPY lib_network/CMakeLists.txt /src/lib_network/CMakeLists.txt
+COPY apps/CMakeLists.txt /src/apps/CMakeLists.txt
+
+# Copy headers and protos for initial configure
+COPY lib_logger/include /src/lib_logger/include
+COPY lib_network/include /src/lib_network/include
+COPY api/proto /src/api/proto
 
 COPY . /src
 WORKDIR /src
@@ -64,9 +68,6 @@ ARG ENABLE_EXAMPLES=ON
 ARG ENABLE_BENCHMARKS=ON
 
 # Use ccache to speed up recompilation
-# The ccache dir is at /cache/ccache (from base image)
-# We expect this volume to be mounted or preserved if using BuildKit
-
 RUN cmake -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \

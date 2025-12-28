@@ -4,57 +4,63 @@ set -e
 echo "=============================="
 echo " Network Library Build Script "
 echo "=============================="
-echo ""
-echo "Select build mode:"
-echo "1) Debug"
-echo "2) Release"
-echo "3) RelWithDebInfo"
-echo "4) MinSizeRel"
-echo "5) ASan"
-echo ""
 
-read -p "Enter choice [1-5]: " choice
+TARGET="all"
+BUILD_TYPE="Debug"
 
-case $choice in
-  1) BUILD_TYPE="Debug" ;;
-  2) BUILD_TYPE="Release" ;;
-  3) BUILD_TYPE="RelWithDebInfo" ;;
-  4) BUILD_TYPE="MinSizeRel" ;;
-  5) BUILD_TYPE="ASan" ;;
-  *)
-    echo "❌ Invalid choice"
-    exit 1
+# Parse arguments
+for i in "$@"
+do
+case $i in
+    --target=*)
+    TARGET="${i#*=}"
+    shift
+    ;;
+    --type=*)
+    BUILD_TYPE="${i#*=}"
+    shift
+    ;;
+    *)
+    # unknown option
     ;;
 esac
+done
+
+echo "🔧 Build Type: ${BUILD_TYPE}"
+echo "🎯 Target    : ${TARGET}"
 
 BUILD_DIR="build-${BUILD_TYPE}"
-
-echo ""
-echo "🔧 Build Type: ${BUILD_TYPE}"
-echo "📁 Build Dir : ${BUILD_DIR}"
-echo ""
-
-# 🔥 Clean existing build directory
-if [ -d "${BUILD_DIR}" ]; then
-  echo "🧹 Removing existing build directory..."
-  rm -rf "${BUILD_DIR}"
-fi
-
-# 📁 Create fresh build directory
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 
+# Map target names to CMake targets
+CMAKE_TARGET=""
+if [ "$TARGET" == "client" ]; then
+    CMAKE_TARGET="oms_client"
+elif [ "$TARGET" == "server" ]; then
+    CMAKE_TARGET="oms_server"
+elif [ "$TARGET" == "logger" ]; then
+    CMAKE_TARGET="logger"
+elif [ "$TARGET" == "protos" ]; then
+    CMAKE_TARGET="protos"
+elif [ "$TARGET" == "all" ]; then
+    CMAKE_TARGET="all"
+else
+    echo "❌ Unknown target: $TARGET"
+    exit 1
+fi
+
 echo "⚙️ Configuring CMake..."
-cmake .. \
-  -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 
-echo ""
 echo "🚀 Building..."
-cmake --build . --parallel $(nproc)
+if [ "$CMAKE_TARGET" == "all" ]; then
+    cmake --build . --parallel $(nproc)
+else
+    cmake --build . --target $CMAKE_TARGET --parallel $(nproc)
+fi
 
 echo ""
-echo "📦 Installing..."
-cmake --install .
-
-echo ""
-echo "✅ Clean build completed successfully!"
+echo "✅ Build completed successfully!"
+echo "📂 Binaries: ${BUILD_DIR}/bin"
+echo "📂 Libraries: ${BUILD_DIR}/lib"

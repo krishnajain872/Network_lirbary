@@ -6,7 +6,7 @@ The primary entry point is `networklib::NetworkLib`.
 
 ### NetworkLib Factory
 
-Header: `networklib/network_lib.h`
+Header: `network/network_lib.h`
 
 ```cpp
 class NetworkLib {
@@ -21,7 +21,7 @@ public:
 
 ### IServer Interface
 
-Header: `networklib/detail/interfaces.h`
+Header: `network/detail/interfaces.h`
 
 ```cpp
 class IServer {
@@ -51,7 +51,7 @@ using StreamHandler = std::function<void(
 
 ### IClient Interface
 
-Header: `networklib/detail/interfaces.h`
+Header: `network/detail/interfaces.h`
 
 ```cpp
 class IClient {
