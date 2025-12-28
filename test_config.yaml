@@ -1,5 +1,0 @@
-
-server:
-  mode: http
-  network:
-    port: 8090

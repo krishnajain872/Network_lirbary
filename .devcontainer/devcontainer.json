@@ -1,97 +1,476 @@
 {
+    // =========================================================================
+    // CONTAINER IDENTITY
+    // =========================================================================
+    // Display name shown in VS Code's remote connection status bar
     "name": "Network Library Dev",
 
+    // =========================================================================
+    // BUILD CONFIGURATION
+    // =========================================================================
     "build": {
+        // Path to Dockerfile relative to this devcontainer.json file
         "dockerfile": "Dockerfile",
-        "context": ".."
+        
+        // Build context directory (parent of .devcontainer folder)
+        // This allows COPY commands in Dockerfile to access repo files
+        "context": "..",
+        
+        // Build arguments passed to docker build
+        "args": {
+            // Enable BuildKit inline cache for faster subsequent builds
+            // BuildKit caches layers in the image itself for reuse
+            "BUILDKIT_INLINE_CACHE": "1"
+        }
     },
 
+    // =========================================================================
+    // VS CODE CUSTOMIZATIONS
+    // =========================================================================
     "customizations": {
         "vscode": {
+            
+            // -----------------------------------------------------------------
+            // EXTENSIONS - Automatically installed when container starts
+            // -----------------------------------------------------------------
             "extensions": [
-                // ---------------- C / C++ ----------------
+                // ============== C / C++ TOOLING ==============
+                
+                // Core C/C++ extension - provides IntelliSense, debugging, code browsing
                 "ms-vscode.cpptools",
+                
+                // Extension pack with additional C++ tools (themes, helpers)
+                "ms-vscode.cpptools-extension-pack",
+                
+                // CMake integration - build system support
                 "ms-vscode.cmake-tools",
+                
+                // CMake syntax highlighting and snippets
                 "twxs.cmake",
+                
+                // LLDB debugger for C/C++ (alternative to GDB, often faster)
                 "vadimcn.vscode-lldb",
+                
+                // Clangd language server - provides faster, more accurate IntelliSense
+                // than the default cpptools engine for large codebases
+                "llvm-vs-code-extensions.vscode-clangd",
 
-                // ---------------- Go ----------------
-                "golang.Go",
+                // ============== GO DEVELOPMENT ==============
+                
+                // Official Go extension - provides IntelliSense, debugging, testing
+                // gopls language server, formatting, linting integration
+                "golang.go",
 
-                // ---------------- Node / Frontend ----------------
+                // ============== NODE / FRONTEND ==============
+                
+                // ESLint - JavaScript/TypeScript linter
                 "dbaeumer.vscode-eslint",
+                
+                // Prettier - opinionated code formatter for JS/TS/CSS/JSON
                 "esbenp.prettier-vscode",
 
-                // ---------------- Python ----------------
+                // ============== PYTHON DEVELOPMENT ==============
+                
+                // Python extension - debugging, IntelliSense, Jupyter support
                 "ms-python.python",
+                
+                // Pylance - fast language server for Python (type checking, completions)
+                "ms-python.vscode-pylance",
 
-                // ---------------- General ----------------
+                // ============== GENERAL PRODUCTIVITY ==============
+                
+                // GitLens - enhanced Git integration (blame, history, comparisons)
                 "eamodio.gitlens",
-                "usernamehw.errorlens"
+                
+                // ErrorLens - shows errors inline in the editor (not just in problems panel)
+                "usernamehw.errorlens",
+                
+                // Code spell checker - catches typos in code and comments
+                "streetsidesoftware.code-spell-checker",
+                
+                // TODO highlight - makes TODO/FIXME comments stand out
+                "wayou.vscode-todo-highlight",
+                
+                // TODO tree - sidebar view of all TODO comments in workspace
+                "gruntfuggly.todo-tree",
+                
+                // Hex editor - view/edit binary files
+                "ms-vscode.hexeditor"
             ],
 
+            // -----------------------------------------------------------------
+            // SETTINGS - VS Code configuration overrides
+            // -----------------------------------------------------------------
             "settings": {
-                // ---------- Terminal ----------
+                
+                // ==================== TERMINAL ====================
+                
+                // Default shell when opening new terminals
                 "terminal.integrated.defaultProfile.linux": "bash",
-
-                // ---------- CMake ----------
-                "cmake.configureOnOpen": true,
-                "cmake.generator": "Ninja",
-                "cmake.buildDirectory": "${workspaceFolder}/build",
-                "cmake.configureSettings": {
-                    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-                },
-
-                // ---------- C / C++ ----------
-                "C_Cpp.intelliSenseEngine": "default",
-                "C_Cpp.default.compilerPath": "/usr/bin/g++",
-                "C_Cpp.default.cppStandard": "c++20",
-
-                // ---------- Go ----------
-                "go.useLanguageServer": true,
-                "go.gopath": "/go",
-                "go.toolsManagement.autoUpdate": true,
-                "go.delveConfig": {
-                    "dlvLoadConfig": {
-                        "followPointers": true,
-                        "maxVariableRecurse": 3,
-                        "maxStringLen": 512,
-                        "maxArrayValues": 1024,
-                        "maxStructFields": -1
+                
+                // Available terminal profiles
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "/bin/bash",
+                        "icon": "terminal-bash"  // Icon shown in terminal dropdown
                     }
                 },
 
-                // ---------- Node ----------
+                // ==================== CMAKE BUILD SYSTEM ====================
+                
+                // Don't auto-configure CMake when opening folder
+                // This prevents slow initial configuration on container start
+                "cmake.configureOnOpen": false,
+                
+                // Use Ninja build system (faster than Make for parallel builds)
+                "cmake.generator": "Ninja",
+                
+                // Where CMake generates build files
+                "cmake.buildDirectory": "${workspaceFolder}/build",
+                
+                // CMake variables passed during configuration
+                "cmake.configureSettings": {
+                    // Generate compile_commands.json for clangd/IntelliSense
+                    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                    
+                    // Build type (Debug includes symbols, no optimization)
+                    "CMAKE_BUILD_TYPE": "Debug"
+                },
+                
+                // Number of parallel jobs (0 = auto-detect CPU cores)
+                "cmake.parallelJobs": 0,
+                
+                // Build project before running/debugging
+                "cmake.buildBeforeRun": true,
+
+                // ==================== C / C++ INTELLISENSE ====================
+                
+                // Use Microsoft's default IntelliSense engine
+                // Alternative: "tag-parser" for faster but less accurate parsing
+                "C_Cpp.intelliSenseEngine": "default",
+                
+                // Path to C++ compiler for IntelliSense (must match Dockerfile)
+                "C_Cpp.default.compilerPath": "/usr/bin/g++-12",
+                
+                // C++ language standard for IntelliSense
+                "C_Cpp.default.cppStandard": "c++20",
+                
+                // C language standard for IntelliSense
+                "C_Cpp.default.cStandard": "c17",
+                
+                // Let CMake Tools provide IntelliSense configuration
+                // This uses compile_commands.json generated by CMake
+                "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+                
+                // Enable clang-tidy static analysis
+                "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+                
+                // Don't run clang-tidy on every file save (can be slow)
+                "C_Cpp.codeAnalysis.clangTidy.runAutomatically": false,
+                
+                // Semantic colorization for better syntax highlighting
+                "C_Cpp.enhancedColorization": "enabled",
+
+                // ==================== GO DEVELOPMENT ====================
+                
+                // Use gopls language server for IntelliSense
+                "go.useLanguageServer": true,
+                
+                // GOPATH directory (where Go packages are installed)
+                "go.gopath": "/go",
+                
+                // Auto-update Go tools (gopls, dlv, etc.) when outdated
+                "go.toolsManagement.autoUpdate": true,
+                
+                // Use golangci-lint for comprehensive linting
+                "go.lintTool": "golangci-lint",
+                
+                // Lint entire package (not just current file) on save
+                "go.lintOnSave": "package",
+                
+                // Use goimports for formatting (adds missing imports)
+                "go.formatTool": "goimports",
+                
+                // Flags passed to `go test` command
+                "go.testFlags": [
+                    "-v",      // Verbose output
+                    "-race"    // Enable race detector
+                ],
+                
+                // Don't show test coverage on save (can be slow)
+                "go.coverOnSave": false,
+                
+                // Delve debugger configuration
+                "go.delveConfig": {
+                    // How much data to load when inspecting variables
+                    "dlvLoadConfig": {
+                        "followPointers": true,           // Dereference pointers
+                        "maxVariableRecurse": 3,          // Nested struct depth
+                        "maxStringLen": 512,              // Max string length to show
+                        "maxArrayValues": 1024,           // Max array elements to show
+                        "maxStructFields": -1             // Show all struct fields
+                    },
+                    "apiVersion": 2,                       // Delve API version
+                    "showGlobalVariables": false           // Don't show globals (cleaner view)
+                },
+
+                // ==================== NODE / TYPESCRIPT ====================
+                
+                // Auto-update import paths when moving files
                 "javascript.updateImportsOnFileMove.enabled": "always",
                 "typescript.updateImportsOnFileMove.enabled": "always",
+                
+                // Use ESLint as formatter
+                "eslint.format.enable": true,
+                
+                // Enable ESLint as a VS Code task
+                "eslint.lintTask.enable": true,
 
-                // ---------- Formatting ----------
+                // ==================== PYTHON ====================
+                
+                // Python interpreter path
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                
+                // Enable linting
+                "python.linting.enabled": true,
+                
+                // Disable pylint (often too strict/slow)
+                "python.linting.pylintEnabled": false,
+                
+                // Disable flake8 (using black for formatting instead)
+                "python.linting.flake8Enabled": false,
+                
+                // Use black for Python formatting (opinionated, fast)
+                "python.formatting.provider": "black",
+
+                // ==================== EDITOR / FORMATTING ====================
+                
+                // Format files on save
                 "editor.formatOnSave": true,
+                
+                // Don't format on paste (can be disruptive)
+                "editor.formatOnPaste": false,
+                
+                // Code actions to run on save
                 "editor.codeActionsOnSave": {
-                    "source.fixAll": true
-                }
+                    // Fix all auto-fixable issues (ESLint, etc.)
+                    "source.fixAll": "explicit",
+                    
+                    // Sort and clean up imports
+                    "source.organizeImports": "explicit"
+                },
+                
+                // Vertical rulers to show line length guidelines
+                "editor.rulers": [80, 100, 120],
+                
+                // Colorize matching bracket pairs
+                "editor.bracketPairColorization.enabled": true,
+                
+                // Show guides between bracket pairs
+                "editor.guides.bracketPairs": true,
+                
+                // Enable AI-powered inline suggestions (GitHub Copilot, etc.)
+                "editor.inlineSuggest.enabled": true,
+                
+                // Preselect first suggestion in autocomplete
+                "editor.suggestSelection": "first",
+                
+                // Tab size (4 spaces for C/C++/Go, can override per-language)
+                "editor.tabSize": 4,
+                
+                // Use spaces instead of tabs
+                "editor.insertSpaces": true,
+                
+                // Don't auto-detect indentation from file content
+                "editor.detectIndentation": false,
+
+                // ==================== FILE ASSOCIATIONS ====================
+                
+                // Map file extensions to languages
+                "files.associations": {
+                    "*.h": "c",                    // .h files are C (not C++)
+                    "*.hpp": "cpp",                // .hpp files are C++
+                    "*.tcc": "cpp",                // Template implementation files
+                    "Dockerfile*": "dockerfile"    // Dockerfile.dev, etc.
+                },
+                
+                // Hide files from file explorer
+                "files.exclude": {
+                    "**/.git": true,           // Git metadata
+                    "**/.svn": true,           // SVN metadata
+                    "**/.hg": true,            // Mercurial metadata
+                    "**/CVS": true,            // CVS metadata
+                    "**/.DS_Store": true,      // macOS metadata
+                    "**/Thumbs.db": true,      // Windows metadata
+                    "**/build": false,         // Show build folder (useful to browse)
+                    "**/__pycache__": true,    // Python cache
+                    "**/.pytest_cache": true,  // pytest cache
+                    "**/node_modules": true    // npm dependencies
+                },
+                
+                // Don't watch these paths for changes (improves performance)
+                "files.watcherExclude": {
+                    "**/build/**": true,
+                    "**/node_modules/**": true,
+                    "**/.git/objects/**": true,
+                    "**/.git/subtree-cache/**": true,
+                    "**/dist/**": true
+                },
+                
+                // Remove trailing whitespace on save
+                "files.trimTrailingWhitespace": true,
+                
+                // Ensure newline at end of file
+                "files.insertFinalNewline": true,
+                
+                // Remove extra blank lines at end of file
+                "files.trimFinalNewlines": true,
+
+                // ==================== SEARCH ====================
+                
+                // Exclude these paths from search results
+                "search.exclude": {
+                    "**/build": true,
+                    "**/node_modules": true,
+                    "**/dist": true,
+                    "**/.git": true,
+                    "**/coverage": true
+                },
+
+                // ==================== GIT ====================
+                
+                // Automatically fetch from remote
+                "git.autofetch": true,
+                
+                // Don't confirm before syncing
+                "git.confirmSync": false,
+                
+                // Commit all changes when no staged files
+                "git.enableSmartCommit": true,
+
+                // ==================== PERFORMANCE ====================
+                
+                // Show extension recommendations
+                "extensions.ignoreRecommendations": false,
+                
+                // Disable telemetry to Microsoft
+                "telemetry.telemetryLevel": "off"
             }
         }
     },
 
+    // =========================================================================
+    // DOCKER RUN ARGUMENTS
+    // =========================================================================
+    // Arguments passed to `docker run` when starting the container
     "runArgs": [
+        // Allow ptrace system call (required for debugging with gdb/lldb)
         "--cap-add=SYS_PTRACE",
+        
+        // Disable seccomp security profile (allows all syscalls)
+        // Needed for debuggers and profilers
         "--security-opt=seccomp=unconfined",
-        "--network=host"
+        
+        // Use host network stack (container shares host's network)
+        // Simplifies port access, but less isolated
+        "--network=host",
+        
+        // Use tini as init process (proper signal handling and zombie reaping)
+        "--init"
     ],
 
+    // =========================================================================
+    // VOLUME MOUNTS
+    // =========================================================================
+    // Additional mounts beyond the workspace folder
+    "mounts": [
+        // Mount Docker socket to allow docker commands inside container
+        // Enables "docker-in-docker" workflows
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+        
+        // Persistent volume for Go package cache (speeds up go build/install)
+        "type=volume,source=network-lib-go-cache,target=/go/pkg",
+        
+        // Persistent volume for npm cache (speeds up npm install)
+        "type=volume,source=network-lib-node-cache,target=/root/.npm"
+    ],
+
+    // =========================================================================
+    // PORT FORWARDING
+    // =========================================================================
+    // Ports to forward from container to host
     "forwardPorts": [
-        8080,
-        50051,
-        9090,
-        22
+        8080,   // HTTP server
+        50051,  // gRPC server
+        9090    // Prometheus metrics
     ],
 
-    "postCreateCommand": [
-        "service ssh start",
-        "mkdir -p build",
-        "cd build && cmake -DCMAKE_BUILD_TYPE=Debug .."
-    ],
+    // Port-specific settings
+    "portsAttributes": {
+        "8080": {
+            "label": "HTTP Server",              // Display name in ports panel
+            "onAutoForward": "notify"             // Show notification when forwarded
+        },
+        "50051": {
+            "label": "gRPC Server",
+            "onAutoForward": "notify"
+        },
+        "9090": {
+            "label": "Metrics/Prometheus",
+            "onAutoForward": "silent"             // Forward silently (no notification)
+        }
+    },
 
-    "remoteUser": "root"
+    // =========================================================================
+    // LIFECYCLE COMMANDS
+    // =========================================================================
+    
+    // Command run once after container is created (first time only)
+    // Just creates build directory and shows instructions
+    "postCreateCommand": "bash -c 'mkdir -p build && echo \"Dev container ready! Run: cd build && cmake .. && ninja\" '",
+
+    // Command run every time the container starts
+    // Marks workspace as safe for git operations
+    "postStartCommand": "git config --global --add safe.directory /workspaces/network-library",
+
+    // =========================================================================
+    // USER AND WORKSPACE
+    // =========================================================================
+    
+    // User to run commands as inside container
+    "remoteUser": "root",
+    
+    // Override the default command (keeps container running)
+    "overrideCommand": true,
+    
+    // Workspace folder inside container
+    "workspaceFolder": "/workspaces/network-library",
+
+    // =========================================================================
+    // ENVIRONMENT VARIABLES
+    // =========================================================================
+    // Environment variables set in the container
+    "containerEnv": {
+        // Workspace path
+        "WORKSPACE": "/workspaces/network-library",
+        
+        // ccache directory (caches compiled object files for faster rebuilds)
+        "CCACHE_DIR": "/workspaces/network-library/.ccache",
+        
+        // Ensure compile_commands.json is always generated
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    },
+
+    // =========================================================================
+    // DEVCONTAINER FEATURES
+    // =========================================================================
+    // Pre-built feature packages to add functionality
+    "features": {
+        // Common utilities feature (adds zsh, oh-my-zsh, etc.)
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,           // Install Zsh shell
+            "installOhMyZsh": false,      // Skip Oh-My-Zsh (heavy, slow)
+            "upgradePackages": false      // Don't upgrade existing packages (faster)
+        }
+    }
 }

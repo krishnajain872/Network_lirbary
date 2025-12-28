@@ -1,8 +1,0 @@
-server:
-  mode: grpc
-  network:
-    port: 8085
-logging:
-  level: debug
-  sinks:
-    - type: console

@@ -1,5 +1,0 @@
-client:
-  mode: tcp
-  connection:
-    host: localhost
-    port: 9090
