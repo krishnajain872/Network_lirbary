@@ -19,10 +19,11 @@ protobuf_generate_cpp(
     ${PROTO_FILES}
 )
 
-add_library(protos SHARED
-    ${PROTO_SRCS}
-    ${PROTO_HDRS}
-)
+# Create a library for the generated code
+add_library(protos STATIC ${PROTO_SRCS} ${PROTO_HDRS})
+
+# Ensure Position Independent Code for linking into shared libraries
+set_property(TARGET protos PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(protos PUBLIC
     ${PROTO_GEN_DIR}
