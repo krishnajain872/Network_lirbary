@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 3.16)
+
+# Collect sources
+file(GLOB_RECURSE LOGGER_SOURCES src/*.cc)
+
+# Define library
+add_library(logger SHARED ${LOGGER_SOURCES})
+
+# Include directories
+target_include_directories(logger PUBLIC
+    include
+)
+
+# Dependencies
+# Json is header-only, included in include/logger/json.hpp
+# If Kafka or Syslog need libraries, link them here.
+find_package(Threads REQUIRED)
+
+target_link_libraries(logger PUBLIC
+    Threads::Threads
+)
+
+# Install
+install(TARGETS logger
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+install(DIRECTORY include/logger DESTINATION include)

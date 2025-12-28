@@ -55,7 +55,7 @@ This document provides a detailed inventory and explanation of the file structur
 ### Core Library (`core/`)
 The `core` directory contains the source code for the reusable network library (`libnetwork.so`).
 
-- **`include/networklib/network_lib.h`**: The primary public API. Users interact with this file to create Servers and Clients.
+- **`include/network/network_lib.h`**: The primary public API. Users interact with this file to create Servers and Clients.
 - **`src/event/event_loop.cpp`**: Implements the event loop using `epoll` or `io_uring`. It handles file descriptor monitoring and task scheduling.
 - **`src/event/reactor.cpp`**: Implements the Reactor pattern, dispatching I/O events to registered handlers.
 - **`src/protocols/`**: Contains implementations for specific protocols (e.g., `tcp/tcp_handler.cpp`).
