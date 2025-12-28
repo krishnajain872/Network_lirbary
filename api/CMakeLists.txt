@@ -24,9 +24,13 @@ add_library(protos STATIC ${PROTO_SRCS} ${PROTO_HDRS})
 # Ensure Position Independent Code for linking into shared libraries
 set_property(TARGET protos PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Debugging: Print where we expect headers to be
+message(STATUS "PROTO_GEN_DIR: ${PROTO_GEN_DIR}")
+
 target_include_directories(protos PUBLIC
     ${PROTO_GEN_DIR}
     ${PROTO_GEN_DIR}/proto
+    ${PROTO_GEN_DIR}/api/proto
     ${Protobuf_INCLUDE_DIR}
 )
 
