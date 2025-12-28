@@ -4,6 +4,9 @@
 #include <thread>
 #include <chrono>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
 
 using namespace networklib;
 
@@ -30,10 +33,19 @@ int main(int argc, char** argv) {
         }
 
         LOG_INFO("Connecting to server...");
+        // #region agent log
+        { std::ofstream log(".cursor/debug.log", std::ios::app); auto t = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"A\",\"location\":\"oms_client/main.cpp:32\",\"message\":\"About to call client->Connect()\",\"data\":{},\"timestamp\":" << t << "}\n"; }
+        // #endregion
         if (!client->Connect()) {
             LOG_ERROR("Failed to connect.");
+            // #region agent log
+            { std::ofstream log(".cursor/debug.log", std::ios::app); auto t = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"C\",\"location\":\"oms_client/main.cpp:34\",\"message\":\"client->Connect() returned false\",\"data\":{},\"timestamp\":" << t << "}\n"; }
+            // #endregion
             return 1;
         }
+        // #region agent log
+        { std::ofstream log(".cursor/debug.log", std::ios::app); auto t = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); log << "{\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"B\",\"location\":\"oms_client/main.cpp:37\",\"message\":\"client->Connect() returned true\",\"data\":{},\"timestamp\":" << t << "}\n"; }
+        // #endregion
         LOG_INFO("Connected!");
 
         client->RegisterMessageHandler([](const StreamEnvelope& msg) {

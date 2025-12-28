@@ -97,9 +97,7 @@ utils::Result<void> Reactor::RegisterServer(int port,
 
                 conn->SetDisconnectCallback([this](const Connection::Ptr& c) {
                      observability::metrics::MetricsCollector::Instance().SetGauge("active_connections", connections_.size() - 1);
-                     if (loop_) {
-                         loop_->RemoveFd(c->Fd());
-                     }
+                     // Note: HandleClose() now removes the fd from the event loop
                      connections_.erase(c->Fd());
                 });
                 

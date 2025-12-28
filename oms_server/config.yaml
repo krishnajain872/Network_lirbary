@@ -1,31 +1,28 @@
 server:
-  protocol: "grpc"
-  host: "0.0.0.0"
-  port: 8080
-  max_connections: 10000
-  thread_pool_size: 16
+  mode: "tcp"
+  name: "hft-engine"
 
-  tls:
-    enabled: false
-    cert_path: "/path/to/cert.pem"
-    key_path: "/path/to/key.pem"
+  network:
+    host: "0.0.0.0"
+    port: 7000
+    protocol: "tcp"
+    socket:
+      tcp_nodelay: true        # CRITICAL: Send data immediately
+      so_reuseport: false      # Single thread for deterministic latency
+      so_rcvbuf: 8388608       # Large buffers (8MB) to prevent drops during bursts
+      so_sndbuf: 8388608
 
   performance:
-    enable_zero_copy: true
-    buffer_size: 65536
-    keep_alive: true
-    tcp_nodelay: true
+    event_loop_type: "epoll"   # Standard, reliable low latency
+    io_threads: "1"            # Single thread to avoid context switches
+    cpu:
+      enable_cpu_affinity: false # Disabled for local dev environment
+    memory:
+      connection_pool_size: 5000
+      allocator: "system"
 
-logging:
-  level: "info"
-  output: "console"
-  file_path: "oms_server.log"
-  rotation:
-    max_size_mb: 100
-    max_files: 10
-  format: "text"
-
-communication:
-  mode: "event_driven"
-  serialization: "protobuf"
-  compression: true
+  observability:
+    logging:
+      level: "info"           # CRITICAL: Don't log on hot path
+    metrics:
+      enabled: false           # Disable overhead
