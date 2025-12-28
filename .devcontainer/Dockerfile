@@ -16,7 +16,7 @@ RUN sed -i 's|http://archive.ubuntu.com/ubuntu|http://in.archive.ubuntu.com/ubun
     && echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf.d/99force-ipv4
 
 # =========================================================
-# CORE SYSTEM TOOLS
+# CORE SYSTEM TOOLS (MINIMAL, FAST LAYER)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# C/C++ TOOLCHAIN
+# C/C++ TOOLCHAIN (SPLIT FOR BETTER CACHING)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -42,11 +42,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     ccache \
     && rm -rf /var/lib/apt/lists/*
 
+# Set GCC 12 as default
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
 
 # =========================================================
-# BUILD TOOLS
+# BUILD TOOLS (SEPARATE LAYER)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -57,7 +58,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# CLANG TOOLCHAIN
+# CLANG TOOLCHAIN (OPTIONAL - SEPARATE LAYER)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -68,7 +69,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# DEVELOPMENT LIBRARIES
+# DEVELOPMENT LIBRARIES (SPLIT BY CATEGORY)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -83,7 +84,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# PYTHON
+# PYTHON (MINIMAL INSTALL)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -93,7 +94,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# UTILITIES
+# UTILITIES (LIGHTWEIGHT)
 # =========================================================
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -104,7 +105,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# NODE.JS 20 LTS
+# NODE.JS 20 LTS (CACHED DOWNLOAD)
 # =========================================================
 ENV NODE_VERSION=20.11.1
 ENV PATH=/usr/local/node/bin:$PATH
@@ -115,6 +116,7 @@ RUN --mount=type=cache,target=/tmp/downloads \
     mkdir -p /usr/local/node && \
     tar -xJf /tmp/downloads/node.tar.xz -C /usr/local/node --strip-components=1
 
+# Install npm packages globally with cache
 RUN --mount=type=cache,target=/root/.npm \
     npm config set registry https://registry.npmjs.org/ && \
     npm install -g --loglevel=error \
@@ -122,7 +124,7 @@ RUN --mount=type=cache,target=/root/.npm \
     pnpm@8.15.0
 
 # =========================================================
-# GO TOOLCHAIN
+# GO TOOLCHAIN (CACHED + OPTIMIZED)
 # =========================================================
 ENV GO_VERSION=1.22.4
 ENV GOROOT=/usr/local/go
@@ -137,59 +139,29 @@ RUN --mount=type=cache,target=/tmp/downloads \
     tar -C /usr/local -xzf /tmp/downloads/go.tar.gz && \
     mkdir -p $GOPATH/bin
 
+# Install Go tools with module cache
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    go install github.com/go-delve/delve/cmd/dlv@latest && \
-    go install golang.org/x/tools/gopls@latest && \
-    go install golang.org/x/tools/cmd/goimports@latest && \
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+    go install -v github.com/go-delve/delve/cmd/dlv@latest && \
+    go install -v golang.org/x/tools/gopls@latest && \
+    go install -v golang.org/x/tools/cmd/goimports@latest && \
+    go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
 
 # =========================================================
-# SSH SERVER (FOR VS CODE REMOTE SSH)
-# =========================================================
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    openssh-server \
-    sudo \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir /var/run/sshd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd
-
-# Root password (dev only)
-RUN echo "root:root" | chpasswd
-
-# =========================================================
-# VS CODE USER (RECOMMENDED)
-# =========================================================
-RUN useradd -ms /bin/bash vscode && \
-    echo "vscode:vscode" | chpasswd && \
-    adduser vscode sudo
-
-# =========================================================
-# COMPILER ENV
+# COMPILER ENVIRONMENT
 # =========================================================
 ENV CC=gcc
 ENV CXX=g++
 
 # =========================================================
-# WORKSPACE
+# WORKSPACE SETUP
 # =========================================================
 WORKDIR /workspaces/network-library
 
-RUN mkdir -p /workspaces/network-library/.ccache \
-    /go/pkg \
-    /root/.npm
+# Create necessary directories
+RUN mkdir -p /workspaces/network-library/.ccache && \
+    mkdir -p /go/pkg && \
+    mkdir -p /root/.npm
 
-# =========================================================
-# SSH PORT
-# =========================================================
-EXPOSE 22
-
-# =========================================================
-# START SSHD (REQUIRED FOR VS CODE)
-# =========================================================
-CMD ["/usr/sbin/sshd", "-D"]
+# Keep container running
+CMD ["/bin/bash", "-c", "trap 'exit 0' SIGTERM; tail -f /dev/null & wait"]
