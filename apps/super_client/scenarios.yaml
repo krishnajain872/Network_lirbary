@@ -1,4 +1,7 @@
 scenarios:
+  # ==========================================
+  # Standard Non-Secure Tests
+  # ==========================================
   - name: "Raw TCP Echo"
     type: "tcp"
     mode: "raw"
@@ -6,9 +9,9 @@ scenarios:
     steps:
       - action: connect
       - action: send
-        data: "Hello Raw World"
+        data: "Hello Raw"
       - action: expect
-        data: "Hello Raw World"
+        data: "Hello Raw"
       - action: disconnect
 
   - name: "Proto TCP Echo"
@@ -18,9 +21,9 @@ scenarios:
     steps:
       - action: connect
       - action: send
-        data: "Hello Proto World"
+        data: "Hello Proto"
       - action: expect
-        data: "Hello Proto World"
+        data: "Hello Proto"
       - action: disconnect
 
   - name: "Raw UDP Packet"
@@ -30,37 +33,63 @@ scenarios:
     steps:
       - action: connect
       - action: send
-        data: "UDP Packet"
+        data: "UDP Pkt"
       - action: expect
-        data: "UDP Packet"
+        data: "UDP Pkt"
       - action: disconnect
 
-  - name: "Proto UDP Packet"
-    type: "udp"
+  # ==========================================
+  # Advanced Protocols (Non-Secure)
+  # ==========================================
+  - name: "gRPC Call"
+    type: "grpc"
     mode: "proto"
-    target: "127.0.0.1:9004"
+    target: "127.0.0.1:9007"
     steps:
       - action: connect
       - action: send
-        data: "UDP Proto"
+        data: "RPC Request"
       - action: expect
-        data: "UDP Proto"
+        data: "RPC Request"
       - action: disconnect
 
-  - name: "HTTP Get (Raw)"
-    type: "tcp"
-    mode: "raw"
-    target: "127.0.0.1:9005"
+  - name: "QUIC Stream"
+    type: "quic"
+    mode: "proto"
+    target: "127.0.0.1:9010"
     steps:
       - action: connect
       - action: send
-        data: "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+        data: "QUIC Data"
       - action: expect
-        data: "HTTP/1.1 200 OK"
-        # Note: ScenarioEngine expects exact match by default.
-        # A real HTTP client would parse, but here we just check if response starts with 200 OK
-        # or contains it. The simple engine might fail on exact match if headers differ.
-        # We'll rely on the engine implementation finding the substring or exact match.
-        # If strict match is enforced, this might be flaky.
-        # Let's assume for this demo the server returns a predictable string.
+        data: "QUIC Data"
+      - action: disconnect
+
+  # ==========================================
+  # Secure Tests (TLS)
+  # ==========================================
+  - name: "Secure TCP Echo"
+    type: "tcp"
+    mode: "proto"
+    secure: true
+    target: "127.0.0.1:9011"
+    steps:
+      - action: connect
+      - action: send
+        data: "Secret TCP"
+      - action: expect
+        data: "Secret TCP"
+      - action: disconnect
+
+  - name: "Secure HTTP Request"
+    type: "http"
+    mode: "proto"
+    secure: true
+    target: "127.0.0.1:9012"
+    steps:
+      - action: connect
+      - action: send
+        data: "GET /secure"
+      - action: expect
+        data: "GET /secure"
       - action: disconnect

@@ -24,7 +24,7 @@ Client::Client(const config::ClientConfig &config) : config_(config) {
   }
 
   int socket_type = SOCK_STREAM;
-  if (config.mode == "udp") {
+  if (config.mode == "udp" || config.mode == "quic") {
       socket_type = SOCK_DGRAM;
   }
 
@@ -109,7 +109,10 @@ bool Client::Connect() {
 
   // Register FD before Connect to ensure we don't miss events if Connect
   // completes immediately
-  loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT | EPOLLET,
+  // Note: Using Level Triggered (removing EPOLLET) to ensure robust UDP handling
+  // where Edge Triggered might miss events if state doesn't transition cleanly
+  // or if read/write handling isn't perfectly edge-compliant for DGRAM.
+  loop_->AddFd(connection_->Fd(), EPOLLIN | EPOLLOUT,
                [this](uint32_t events) {
                  if (events & EPOLLIN)
                    connection_->HandleRead();

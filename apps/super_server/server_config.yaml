@@ -1,9 +1,10 @@
 server:
   name: "SuperServer"
-  version: "1.0.0"
-  environment: "benchmark"
+  version: "2.0.0"
+  environment: "audit"
 
   protocols:
+    # Standard Non-Secure Protocols
     - name: "RawTCP"
       type: "tcp"
       mode: "raw"
@@ -30,65 +31,101 @@ server:
 
     - name: "StandardHTTP"
       type: "http"
-      mode: "raw"
-      # HTTP handler normally parses raw bytes anyway, but 'raw' mode ensures
-      # we bypass strict StreamEnvelope requirements if implemented that way.
-      # For standard http handler usage, type=http is usually sufficient.
+      mode: "proto" # Use proto handler to wrap envelope or raw if handler supports
       port: 9005
       enabled: true
 
     - name: "StandardWS"
       type: "websocket"
-      mode: "raw"
+      mode: "proto"
       port: 9006
       enabled: true
+
+    - name: "StandardGRPC"
+      type: "grpc"
+      mode: "proto"
+      port: 9007
+      enabled: true
+
+    - name: "StandardRPC"
+      type: "rpc"
+      mode: "proto"
+      port: 9008
+      enabled: true
+
+    # QUIC (Experimental/Mock)
+    - name: "StandardQUIC"
+      type: "quic"
+      mode: "proto"
+      port: 9010
+      enabled: true
+
+    # Secure Protocols
+    - name: "SecureTCP"
+      type: "tcp"
+      mode: "proto"
+      port: 9011
+      enabled: true
+      ssl:
+        enabled: true
+        cert_file: "certs/server.crt"
+        key_file: "certs/server.key"
+
+    - name: "SecureHTTP"
+      type: "http"
+      mode: "proto"
+      port: 9012
+      enabled: true
+      ssl:
+        enabled: true
+        cert_file: "certs/server.crt"
+        key_file: "certs/server.key"
+
+    - name: "SecureGRPC"
+      type: "grpc"
+      mode: "proto"
+      port: 9013
+      enabled: true
+      ssl:
+        enabled: true
+        cert_file: "certs/server.crt"
+        key_file: "certs/server.key"
+
+    - name: "SecureWS"
+      type: "websocket"
+      mode: "proto"
+      port: 9014
+      enabled: true
+      ssl:
+        enabled: true
+        cert_file: "certs/server.crt"
+        key_file: "certs/server.key"
 
   performance:
     max_connections: 100000
     event_loop_type: "epoll"
-    io_threads: "4"
+    io_threads: "auto"
     worker_threads: "8"
     enable_zero_copy: true
-    use_sendfile: true
-    use_splice: true
 
     memory:
       allocator: "system"
       enable_memory_pools: true
       connection_pool_size: 20000
       buffer_pool_size: 20000
-      enable_huge_pages: true
-      huge_page_size_mb: 2
-
-    cpu:
-      enable_cpu_affinity: true
-      isolated_cores: [0, 1, 2, 3]
 
   resilience:
     rate_limiter:
       enabled: true
       algorithm: "token_bucket"
-      requests_per_second: 5000
-      burst_size: 500
-      per_ip_enabled: true
-      per_ip_requests_per_second: 1000
-      per_ip_burst_size: 100
-
-    circuit_breaker:
-      enabled: true
-      failure_threshold_percentage: 50
-      success_threshold: 5
-      timeout_ms: 10000
+      requests_per_second: 10000
+      burst_size: 1000
 
   observability:
     logging:
       level: "info"
       output: "file"
-      file_path: "super_server.log"
-      compress: false
-
+      file_path: "super_server_audit.log"
     metrics:
       enabled: true
       port: 9090
-      format: "prometheus"
-      path: "/metrics"
