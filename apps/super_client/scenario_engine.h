@@ -18,6 +18,7 @@ struct Scenario {
     std::string type;
     std::string mode;
     std::string target;
+    bool secure = false;
     std::vector<Step> steps;
 };
 

@@ -1,0 +1,77 @@
+# Audit Report
+
+## Unit Tests
+- Status: PASS
+- Duration: 0.02s
+## Integration Tests
+- Status: FAIL
+- Duration: 25.03s
+### Error Output
+```
+
+[2025-12-29 17:41:08.901432] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: Raw TCP Echo
+[2025-12-29 17:41:08.902239] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for raw mode
+[2025-12-29 17:41:08.902295] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9001
+[2025-12-29 17:41:08.902593] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+[2025-12-29 17:41:08.904598] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:120:Execute] Action: Send 'Hello Raw'
+[2025-12-29 17:41:08.904737] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:130:Execute] Action: Expect 'Hello Raw'
+[2025-12-29 17:41:08.905363] [ERROR] [25102:139654204491456] [139654204491456] [connection.cc:343:HandleError] Connection error on fd 5
+[2025-12-29 17:41:13.905023] [ERROR] [25102:139654215997376] [139654215997376] [scenario_engine.cc:133:Execute] Timeout waiting for data
+[2025-12-29 17:41:13.905105] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:13.905305] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:147:Run] Event loop stopped
+[2025-12-29 17:41:13.905852] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:13.905954] [ERROR] [25102:139654215997376] [139654215997376] [main.cc:19:main] Scenario 'Raw TCP Echo' FAILED
+[2025-12-29 17:41:13.905965] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: Proto TCP Echo
+[2025-12-29 17:41:13.906051] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for tcp mode
+[2025-12-29 17:41:13.906065] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9002
+[2025-12-29 17:41:13.906185] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+[2025-12-29 17:41:13.908005] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:120:Execute] Action: Send 'Hello Proto'
+[2025-12-29 17:41:13.908204] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:130:Execute] Action: Expect 'Hello Proto'
+[2025-12-29 17:41:13.908591] [ERROR] [25102:139654204491456] [139654204491456] [connection.cc:343:HandleError] Connection error on fd 5
+[2025-12-29 17:41:18.908485] [ERROR] [25102:139654215997376] [139654215997376] [scenario_engine.cc:133:Execute] Timeout waiting for data
+[2025-12-29 17:41:18.908558] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:18.908772] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:147:Run] Event loop stopped
+[2025-12-29 17:41:18.909102] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:18.909176] [ERROR] [25102:139654215997376] [139654215997376] [main.cc:19:main] Scenario 'Proto TCP Echo' FAILED
+[2025-12-29 17:41:18.909185] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: Raw UDP Packet
+[2025-12-29 17:41:18.909262] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for udp mode
+[2025-12-29 17:41:18.909271] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9003
+[2025-12-29 17:41:18.909431] [INFO] [25102:139654215997376] [139654215997376] [connection.cc:105:Connect] Connected to 127.0.0.1:9003
+[2025-12-29 17:41:18.909473] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:120:Execute] Action: Send 'UDP Pkt'
+[2025-12-29 17:41:18.909489] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:130:Execute] Action: Expect 'UDP Pkt'
+[2025-12-29 17:41:18.909482] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+[2025-12-29 17:41:23.909758] [ERROR] [25102:139654215997376] [139654215997376] [scenario_engine.cc:133:Execute] Timeout waiting for data
+[2025-12-29 17:41:23.909885] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:23.910113] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:147:Run] Event loop stopped
+[2025-12-29 17:41:23.910420] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:23.910507] [ERROR] [25102:139654215997376] [139654215997376] [main.cc:19:main] Scenario 'Raw UDP Packet' FAILED
+[2025-12-29 17:41:23.910518] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: gRPC Call
+[2025-12-29 17:41:23.910600] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for grpc mode
+[2025-12-29 17:41:23.910609] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9007
+[2025-12-29 17:41:23.910812] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+[2025-12-29 17:41:23.912824] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:120:Execute] Action: Send 'RPC Request'
+[2025-12-29 17:41:23.913051] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:130:Execute] Action: Expect 'RPC Request'
+[2025-12-29 17:41:28.913335] [ERROR] [25102:139654215997376] [139654215997376] [scenario_engine.cc:133:Execute] Timeout waiting for data
+[2025-12-29 17:41:28.913397] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:28.913595] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:147:Run] Event loop stopped
+[2025-12-29 17:41:28.913847] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:28.913926] [ERROR] [25102:139654215997376] [139654215997376] [main.cc:19:main] Scenario 'gRPC Call' FAILED
+[2025-12-29 17:41:28.913934] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: QUIC Stream
+[2025-12-29 17:41:28.914014] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for quic mode
+[2025-12-29 17:41:28.914021] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9010
+[2025-12-29 17:41:28.914266] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+[2025-12-29 17:41:28.914568] [INFO] [25102:139654215997376] [139654215997376] [connection.cc:105:Connect] Connected to 127.0.0.1:9010
+[2025-12-29 17:41:28.914627] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:120:Execute] Action: Send 'QUIC Data'
+[2025-12-29 17:41:28.914706] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:130:Execute] Action: Expect 'QUIC Data'
+[2025-12-29 17:41:28.915461] [ERROR] [25102:139654204491456] [139654204491456] [connection.cc:343:HandleError] Connection error on fd 5
+[2025-12-29 17:41:33.914958] [ERROR] [25102:139654215997376] [139654215997376] [scenario_engine.cc:133:Execute] Timeout waiting for data
+[2025-12-29 17:41:33.915023] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:33.915269] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:147:Run] Event loop stopped
+[2025-12-29 17:41:33.915494] [INFO] [25102:139654215997376] [139654215997376] [event_loop.cc:151:Stop] Stopping event loop
+[2025-12-29 17:41:33.915572] [ERROR] [25102:139654215997376] [139654215997376] [main.cc:19:main] Scenario 'QUIC Stream' FAILED
+[2025-12-29 17:41:33.915669] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:38:Execute] Executing Scenario: Secure TCP Echo
+[2025-12-29 17:41:33.915757] [INFO] [25102:139654215997376] [139654215997376] [client.cc:33:Client] Client initialized for tcp mode
+[2025-12-29 17:41:33.915791] [INFO] [25102:139654215997376] [139654215997376] [scenario_engine.cc:114:Execute] Action: Connect to 127.0.0.1:9011
+[2025-12-29 17:41:33.915985] [INFO] [25102:139654204491456] [139654204491456] [event_loop.cc:112:Run] Event loop starting
+
+```

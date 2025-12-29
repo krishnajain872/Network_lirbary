@@ -20,6 +20,7 @@ std::vector<Scenario> ScenarioEngine::Parse(const std::string& filepath) {
             s.type = node["type"].as<std::string>();
             s.mode = node["mode"].as<std::string>("proto");
             s.target = node["target"].as<std::string>();
+            if (node["secure"]) s.secure = node["secure"].as<bool>();
 
             for (const auto& step_node : node["steps"]) {
                 Step step;
@@ -57,9 +58,23 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
 
     if (scenario.type == "udp") {
         client_config.mode = "udp";
+    } else if (scenario.type == "grpc") {
+        client_config.mode = "grpc";
+    } else if (scenario.type == "quic") {
+        client_config.mode = "quic";
+    } else if (scenario.type == "rpc") {
+        client_config.mode = "rpc"; // Requires RpcClientProtocol support
+    } else if (scenario.type == "websocket") {
+        client_config.mode = "websocket";
     } else {
         // TCP or HTTP
         client_config.mode = (scenario.mode == "raw") ? "raw" : "tcp";
+    }
+
+    if (scenario.secure) {
+        client_config.ssl.enabled = true;
+        // Assume trusted CA or self-signed allowed
+        // client_config.ssl.verify_client = false;
     }
 
     size_t colon = scenario.target.find(':');
