@@ -23,7 +23,12 @@ Client::Client(const config::ClientConfig &config) : config_(config) {
         res.GetError().Message().c_str());
   }
 
-  int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+  int socket_type = SOCK_STREAM;
+  if (config.mode == "udp") {
+      socket_type = SOCK_DGRAM;
+  }
+
+  int fd = socket(AF_INET, socket_type | SOCK_NONBLOCK, 0);
   connection_ = std::make_shared<Connection>(loop_.get(), fd);
   LOG(Info, "Client initialized for %s mode", config.mode.c_str());
 }
