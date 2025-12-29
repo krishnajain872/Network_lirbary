@@ -22,10 +22,12 @@ public:
     void Wait() override;
 
     void RegisterStreamHandler(StreamHandler handler) override;
+    void RegisterRawHandler(RawHandler handler) override;
 
 private:
     config::ServerConfig config_;
     StreamHandler stream_handler_;
+    RawHandler raw_handler_;
     std::unique_ptr<event::Reactor> reactor_;
     std::unique_ptr<config::ConfigHotReload> hot_reload_;
     std::thread runner_thread_;

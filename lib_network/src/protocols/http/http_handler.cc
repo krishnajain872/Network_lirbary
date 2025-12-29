@@ -34,6 +34,26 @@ public:
         }
     }
 
+    void Write(const std::string& data) override {
+        // Send raw data as chunked body if headers sent, or response if not
+        if (!headers_sent_) {
+            std::stringstream ss;
+            ss << "HTTP/1.1 200 OK\r\n";
+            ss << "Connection: keep-alive\r\n";
+            ss << "Transfer-Encoding: chunked\r\n";
+            ss << "\r\n";
+            conn_->Send(ss.str());
+            headers_sent_ = true;
+        }
+
+        if (!data.empty()) {
+            std::stringstream ss;
+            ss << std::hex << data.size() << "\r\n";
+            ss << data << "\r\n";
+            conn_->Send(ss.str());
+        }
+    }
+
     void Close() override {
         if (headers_sent_) {
             conn_->Send("0\r\n\r\n");

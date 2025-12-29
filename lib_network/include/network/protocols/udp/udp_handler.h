@@ -34,8 +34,12 @@ public:
     using StreamHandler = protocols::ProtocolHandler::StreamHandler;
     virtual void SetStreamHandler(StreamHandler handler) { stream_handler_ = handler; }
 
+    using RawHandler = networklib::IServer::RawHandler;
+    virtual void SetRawHandler(RawHandler handler) { raw_handler_ = handler; }
+
 protected:
     StreamHandler stream_handler_;
+    RawHandler raw_handler_;
 };
 
 // Simple Echo Handler for testing/default use

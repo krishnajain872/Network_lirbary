@@ -76,8 +76,17 @@ bool Client::Connect() {
 
   // Wire up Message Callback
   connection_->SetMessageCallback([this](const Connection::Ptr &conn) {
-    if (protocol_)
-      protocol_->OnDataReceived(conn, message_handler_);
+    if (config_.mode == "raw" && raw_message_handler_) {
+        // Raw Mode: consume everything
+        auto& buf = conn->InputBuffer();
+        if (buf.ReadableBytes() > 0) {
+            std::string data(buf.Peek(), buf.ReadableBytes());
+            buf.RetrieveAll();
+            raw_message_handler_(data);
+        }
+    } else if (protocol_) {
+        protocol_->OnDataReceived(conn, message_handler_);
+    }
   });
 
   if (config_.ssl.enabled) {
@@ -153,6 +162,10 @@ void Client::Disconnect() {
 
 void Client::RegisterMessageHandler(MessageHandler handler) {
   message_handler_ = handler;
+}
+
+void Client::RegisterRawMessageHandler(RawMessageHandler handler) {
+  raw_message_handler_ = handler;
 }
 
 bool Client::Send(const std::string &data) {

@@ -85,46 +85,67 @@ ServerConfig ConfigParser::Parse(const std::string& filepath) {
         if (server["protocols"]) {
             YAML::Node protos = server["protocols"];
             
-            // gRPC
-            if (protos["grpc"]) {
-                YAML::Node g = protos["grpc"];
-                config.protocols.grpc.enabled = GetSafe<bool>(g, "enabled", false);
-                config.protocols.grpc.max_receive_message_size_mb = GetSafe<int>(g, "max_receive_message_size_mb", 100);
-                
-                if (g["streaming"]) {
-                    config.protocols.grpc.streaming.bidirectional = GetSafe<bool>(g["streaming"], "bidirectional", true);
-                    config.protocols.grpc.streaming.max_concurrent_streams = GetSafe<int>(g["streaming"], "max_concurrent_streams", 1000);
-                    config.protocols.grpc.streaming.initial_window_size = GetSafe<int>(g["streaming"], "initial_window_size", 65535);
-                }
-                
-                if (g["compression"]) {
-                    config.protocols.grpc.compression.enabled = GetSafe<bool>(g["compression"], "enabled", true);
-                    config.protocols.grpc.compression.default_algorithm = GetSafe<std::string>(g["compression"], "default_algorithm", "gzip");
-                    config.protocols.grpc.compression.algorithms = GetStringVector(g["compression"], "algorithms");
-                }
-            }
-            
-            // HTTP
-            if (protos["http"]) {
-                config.protocols.http.enabled = GetSafe<bool>(protos["http"], "enabled", false);
-                config.protocols.http.port = GetSafe<int>(protos["http"], "port", 0);
-                config.protocols.http.version = GetSafe<std::string>(protos["http"], "version", "1.1");
-            }
-            
-            // WebSocket
-            if (protos["websocket"]) {
-                config.protocols.websocket.enabled = GetSafe<bool>(protos["websocket"], "enabled", false);
-                config.protocols.websocket.port = GetSafe<int>(protos["websocket"], "port", 0);
-            }
+            if (protos.IsSequence()) {
+                // New Format: List of protocols
+                for (const auto& proto : protos) {
+                    ProtocolConfig pc;
+                    pc.name = GetSafe<std::string>(proto, "name", "default");
+                    pc.type = GetSafe<std::string>(proto, "type", "tcp");
+                    pc.mode = GetSafe<std::string>(proto, "mode", "proto");
+                    pc.port = GetSafe<int>(proto, "port", 0);
+                    pc.enabled = GetSafe<bool>(proto, "enabled", true);
 
-            // TCP/UDP
-            if (protos["tcp"]) {
-                config.protocols.tcp.enabled = GetSafe<bool>(protos["tcp"], "enabled", false);
-                config.protocols.tcp.port = GetSafe<int>(protos["tcp"], "port", 0);
-            }
-            if (protos["udp"]) {
-                config.protocols.udp.enabled = GetSafe<bool>(protos["udp"], "enabled", false);
-                config.protocols.udp.port = GetSafe<int>(protos["udp"], "port", 0);
+                    if (proto["ssl"]) {
+                        pc.ssl.enabled = GetSafe<bool>(proto["ssl"], "enabled", false);
+                        pc.ssl.cert_file = GetSafe<std::string>(proto["ssl"], "cert_file", "");
+                        pc.ssl.key_file = GetSafe<std::string>(proto["ssl"], "key_file", "");
+                        pc.ssl.ca_file = GetSafe<std::string>(proto["ssl"], "ca_file", "");
+                    }
+                    config.protocol_list.push_back(pc);
+                }
+            } else {
+                // Legacy Format: Map of protocol names
+                // gRPC
+                if (protos["grpc"]) {
+                    YAML::Node g = protos["grpc"];
+                    config.protocols.grpc.enabled = GetSafe<bool>(g, "enabled", false);
+                    config.protocols.grpc.max_receive_message_size_mb = GetSafe<int>(g, "max_receive_message_size_mb", 100);
+
+                    if (g["streaming"]) {
+                        config.protocols.grpc.streaming.bidirectional = GetSafe<bool>(g["streaming"], "bidirectional", true);
+                        config.protocols.grpc.streaming.max_concurrent_streams = GetSafe<int>(g["streaming"], "max_concurrent_streams", 1000);
+                        config.protocols.grpc.streaming.initial_window_size = GetSafe<int>(g["streaming"], "initial_window_size", 65535);
+                    }
+
+                    if (g["compression"]) {
+                        config.protocols.grpc.compression.enabled = GetSafe<bool>(g["compression"], "enabled", true);
+                        config.protocols.grpc.compression.default_algorithm = GetSafe<std::string>(g["compression"], "default_algorithm", "gzip");
+                        config.protocols.grpc.compression.algorithms = GetStringVector(g["compression"], "algorithms");
+                    }
+                }
+                
+                // HTTP
+                if (protos["http"]) {
+                    config.protocols.http.enabled = GetSafe<bool>(protos["http"], "enabled", false);
+                    config.protocols.http.port = GetSafe<int>(protos["http"], "port", 0);
+                    config.protocols.http.version = GetSafe<std::string>(protos["http"], "version", "1.1");
+                }
+                
+                // WebSocket
+                if (protos["websocket"]) {
+                    config.protocols.websocket.enabled = GetSafe<bool>(protos["websocket"], "enabled", false);
+                    config.protocols.websocket.port = GetSafe<int>(protos["websocket"], "port", 0);
+                }
+
+                // TCP/UDP
+                if (protos["tcp"]) {
+                    config.protocols.tcp.enabled = GetSafe<bool>(protos["tcp"], "enabled", false);
+                    config.protocols.tcp.port = GetSafe<int>(protos["tcp"], "port", 0);
+                }
+                if (protos["udp"]) {
+                    config.protocols.udp.enabled = GetSafe<bool>(protos["udp"], "enabled", false);
+                    config.protocols.udp.port = GetSafe<int>(protos["udp"], "port", 0);
+                }
             }
         }
         

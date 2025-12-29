@@ -1,0 +1,24 @@
+scenarios:
+  - name: "Raw TCP Echo"
+    type: "tcp"
+    mode: "raw"
+    target: "127.0.0.1:9001"
+    steps:
+      - action: connect
+      - action: send
+        data: "Hello Raw World"
+      - action: expect
+        data: "Hello Raw World"
+      - action: disconnect
+
+  - name: "Proto TCP Echo"
+    type: "tcp"
+    mode: "proto"
+    target: "127.0.0.1:9002"
+    steps:
+      - action: connect
+      - action: send
+        data: "Hello Proto World"
+      - action: expect
+        data: "Hello Proto World"
+      - action: disconnect

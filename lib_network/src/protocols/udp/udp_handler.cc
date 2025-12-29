@@ -26,6 +26,15 @@ public:
 
         sendto(fd_, payload.data(), payload.size(), 0, (struct sockaddr*)&addr, sizeof(addr));
     }
+
+    void Write(const std::string& data) override {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port_);
+        inet_pton(AF_INET, ip_.c_str(), &addr.sin_addr);
+
+        sendto(fd_, data.data(), data.size(), 0, (struct sockaddr*)&addr, sizeof(addr));
+    }
     
     void Close() override {} // UDP is connectionless
 
@@ -36,7 +45,11 @@ private:
 };
 
 void EchoUdpHandler::OnPacket(int fd, const char* data, size_t len, const std::string& source_ip, int source_port) {
-    if (stream_handler_) {
+    if (raw_handler_) {
+        std::vector<char> raw_data(data, data + len);
+        auto ctx = std::make_shared<UdpStreamContext>(fd, source_ip, source_port);
+        raw_handler_(raw_data, ctx);
+    } else if (stream_handler_) {
         StreamEnvelope req;
         // Assume payload is serialized envelope OR raw bytes
         // Try parsing

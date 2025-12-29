@@ -48,37 +48,89 @@ void Server::Init() {
     }
 
     // Register Handlers
-    std::shared_ptr<protocols::ProtocolHandler> handler;
-    if (config_.mode == "udp") {
-        auto udp_handler = std::make_shared<protocols::udp::EchoUdpHandler>();
-        if (stream_handler_) {
-            udp_handler->SetStreamHandler(stream_handler_);
+    // If protocol_list is present, use it. Otherwise use legacy config_.mode/network.port
+    if (!config_.protocol_list.empty()) {
+        for (const auto& proto : config_.protocol_list) {
+            if (!proto.enabled) continue;
+
+            // TLS for this protocol
+            std::shared_ptr<networklib::security::TlsContext> proto_tls = nullptr;
+            if (proto.ssl.enabled) {
+                proto_tls = std::make_shared<networklib::security::TlsContext>();
+                auto res = proto_tls->Init(proto.ssl.cert_file, proto.ssl.key_file);
+                if (!res) throw std::runtime_error("Failed to init TLS for " + proto.name + ": " + res.GetError().Message());
+            }
+
+            if (proto.type == "udp") {
+                auto udp_handler = std::make_shared<protocols::udp::EchoUdpHandler>();
+                if (proto.mode == "raw") {
+                     // UDP doesn't distinguish much, but we can set the raw handler
+                     if (raw_handler_) udp_handler->SetRawHandler(raw_handler_);
+                } else if (stream_handler_) {
+                     udp_handler->SetStreamHandler(stream_handler_);
+                }
+                auto res = reactor_->RegisterUdpServer(proto.port, udp_handler);
+                if (!res) throw std::runtime_error("UDP Register Failed: " + res.GetError().Message());
+                LOG(Info, "Protocol %s (UDP) listening on port %d", proto.name.c_str(), proto.port);
+            } else {
+                auto handler = protocols::ProtocolFactory::Create(proto.type);
+                if (proto.mode == "raw") {
+                    if (raw_handler_) handler->SetRawHandler(raw_handler_);
+                } else {
+                    if (stream_handler_) handler->SetStreamHandler(stream_handler_);
+                }
+
+                if (config_.resilience.rate_limiter.enabled) {
+                    auto bucket = std::make_shared<resilience::TokenBucket>(
+                        config_.resilience.rate_limiter.requests_per_second,
+                        config_.resilience.rate_limiter.burst_size
+                    );
+                    handler->SetRateLimiter(bucket);
+                }
+
+                auto res = reactor_->RegisterServer(proto.port, handler, proto_tls);
+                if (!res) throw std::runtime_error("Server Register Failed: " + res.GetError().Message());
+                LOG(Info, "Protocol %s (%s) listening on port %d", proto.name.c_str(), proto.type.c_str(), proto.port);
+            }
         }
-        auto res = reactor_->RegisterUdpServer(config_.network.port, udp_handler);
-        if (!res) throw std::runtime_error(res.GetError().Message());
     } else {
-        handler = protocols::ProtocolFactory::Create(config_.mode);
-        if (stream_handler_) {
-            handler->SetStreamHandler(stream_handler_);
-        }
+        // LEGACY PATH
+        std::shared_ptr<protocols::ProtocolHandler> handler;
+        if (config_.mode == "udp") {
+            auto udp_handler = std::make_shared<protocols::udp::EchoUdpHandler>();
+            if (stream_handler_) {
+                udp_handler->SetStreamHandler(stream_handler_);
+            }
+            auto res = reactor_->RegisterUdpServer(config_.network.port, udp_handler);
+            if (!res) throw std::runtime_error(res.GetError().Message());
+        } else {
+            handler = protocols::ProtocolFactory::Create(config_.mode);
+            if (stream_handler_) {
+                handler->SetStreamHandler(stream_handler_);
+            }
 
-        // Resilience
-        if (config_.resilience.rate_limiter.enabled) {
-            auto bucket = std::make_shared<resilience::TokenBucket>(
-                config_.resilience.rate_limiter.requests_per_second,
-                config_.resilience.rate_limiter.burst_size
-            );
-            handler->SetRateLimiter(bucket);
-        }
+            // Resilience
+            if (config_.resilience.rate_limiter.enabled) {
+                auto bucket = std::make_shared<resilience::TokenBucket>(
+                    config_.resilience.rate_limiter.requests_per_second,
+                    config_.resilience.rate_limiter.burst_size
+                );
+                handler->SetRateLimiter(bucket);
+            }
 
-        auto res = reactor_->RegisterServer(config_.network.port, handler, tls_ctx);
-        if (!res) throw std::runtime_error(res.GetError().Message());
+            auto res = reactor_->RegisterServer(config_.network.port, handler, tls_ctx);
+            if (!res) throw std::runtime_error(res.GetError().Message());
+        }
+        LOG(Info, "Server initialized: %s mode on port %d", config_.mode.c_str(), config_.network.port);
     }
-    LOG(Info, "Server initialized: %s mode on port %d", config_.mode.c_str(), config_.network.port);
 }
 
 void Server::RegisterStreamHandler(StreamHandler handler) {
     stream_handler_ = handler;
+}
+
+void Server::RegisterRawHandler(RawHandler handler) {
+    raw_handler_ = handler;
 }
 
 bool Server::Start() {

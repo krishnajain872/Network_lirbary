@@ -28,6 +28,12 @@ public:
         }
     }
 
+    void Write(const std::string& data) override {
+        if (auto conn = conn_.lock()) {
+            conn->Send(data);
+        }
+    }
+
     void Close() override {
         if (auto conn = conn_.lock()) {
             conn->ForceClose();
@@ -44,6 +50,25 @@ void TcpHandler::OnConnection(const core::Connection::Ptr& conn) {
 
 void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
     auto& buf = conn->InputBuffer();
+
+    if (raw_handler_) {
+        // Raw Mode: Pass everything available to the handler
+        size_t len = buf.ReadableBytes();
+        if (len == 0) return;
+
+        if (CheckRateLimit()) {
+            std::vector<char> data(len);
+            std::copy(buf.Peek(), buf.Peek() + len, data.begin());
+            buf.Retrieve(len);
+
+            auto ctx = std::make_shared<TcpStreamContext>(conn);
+            raw_handler_(data, ctx);
+        } else {
+             LOG_WARN("Rate limit exceeded for fd %d. Dropping raw message.", conn->Fd());
+             buf.Retrieve(len);
+        }
+        return;
+    }
 
     while (buf.ReadableBytes() >= 4) {
         uint32_t length = 0;

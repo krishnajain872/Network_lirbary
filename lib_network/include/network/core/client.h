@@ -25,9 +25,13 @@ public:
     bool Send(const StreamEnvelope& envelope) override;
     void RegisterMessageHandler(MessageHandler handler) override;
 
+    using RawMessageHandler = std::function<void(const std::string&)>;
+    void RegisterRawMessageHandler(RawMessageHandler handler);
+
 private:
     config::ClientConfig config_;
     MessageHandler message_handler_;
+    RawMessageHandler raw_message_handler_;
     std::unique_ptr<client::IClientProtocol> protocol_;
     std::unique_ptr<event::EventLoop> loop_;
     std::shared_ptr<Connection> connection_;

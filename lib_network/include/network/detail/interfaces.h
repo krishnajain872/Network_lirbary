@@ -13,6 +13,7 @@ namespace networklib {
     public:
         virtual ~IStreamContext() = default;
         virtual void Write(const StreamEnvelope& msg) = 0;
+        virtual void Write(const std::string& data) = 0;
         virtual void Close() = 0;
     };
 
@@ -25,6 +26,9 @@ namespace networklib {
 
         using StreamHandler = std::function<void(const StreamEnvelope& req, StreamEnvelope& resp, std::shared_ptr<IStreamContext> ctx)>;
         virtual void RegisterStreamHandler(StreamHandler handler) = 0;
+
+        using RawHandler = std::function<void(const std::vector<char>& data, std::shared_ptr<IStreamContext> ctx)>;
+        virtual void RegisterRawHandler(RawHandler handler) = 0;
     };
 
     class IClient {
