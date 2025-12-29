@@ -99,6 +99,9 @@ utils::Result<void> Connection::Connect(const std::string &host, int port) {
     // #endregion
   } else {
     state_ = kConnected;
+    if (connect_callback_) {
+        connect_callback_(true);
+    }
     LOG(Info, "Connected to %s:%d", host.c_str(), port);
     // #region agent log
     {

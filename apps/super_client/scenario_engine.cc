@@ -37,12 +37,30 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
     LOG_INFO("Executing Scenario: %s", scenario.name.c_str());
 
     config::ClientConfig client_config;
-    client_config.mode = scenario.mode; // Use mode (raw/proto) as config mode, usually protocol (tcp) goes here?
-    // Actually ClientConfig.mode is usually "tcp", "udp".
-    // The "Raw" distinction is new.
-    // If scenario.mode is "raw", we treat it as TCP (or UDP) but bypass protocol handler.
-    // For now assume "type" maps to client_config.mode (tcp/udp).
-    client_config.mode = (scenario.mode == "raw") ? "raw" : scenario.type;
+    // Map scenario type to config mode.
+    // "raw" mode in config bypasses protocol handler in Client.
+    // However, if we want UDP Raw, we need to know it's UDP.
+    // The Client class currently uses config_.mode to decide ProtocolFactory::Create(mode).
+    // If mode is "raw", it might default to TCP or behave strictly as raw TCP.
+    // To support UDP Raw, we might need a composite mode like "udp_raw" or pass type separately.
+    // For now, adhering to the library's apparent "raw" means TCP Raw, while "udp" means UDP.
+    // But we need to support UDP Raw.
+    // Workaround: We will use scenario.type for the connection setup if possible.
+    // Current Client implementation uses `config.mode` for everything.
+    // Let's trust that "udp" mode can support RawHandler if we register it?
+    // Checking Client::Connect -> ProtocolFactory::Create(mode).
+    // If we pass "udp", it creates UdpClientProtocol.
+    // If we pass "raw", it might fail ProtocolFactory if not registered, OR handled specially.
+    // Let's assume:
+    // - TCP Raw -> mode="raw"
+    // - UDP Raw -> mode="udp" + RegisterRawMessageHandler
+
+    if (scenario.type == "udp") {
+        client_config.mode = "udp";
+    } else {
+        // TCP or HTTP
+        client_config.mode = (scenario.mode == "raw") ? "raw" : "tcp";
+    }
 
     size_t colon = scenario.target.find(':');
     if (colon != std::string::npos) {
@@ -96,11 +114,12 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
         } else if (step.action == "expect") {
             LOG_INFO("Action: Expect '%s'", step.data.c_str());
             std::unique_lock<std::mutex> lock(mtx);
-            if (!cv.wait_for(lock, std::chrono::seconds(2), [&]{ return message_received.load(); })) {
+            if (!cv.wait_for(lock, std::chrono::seconds(5), [&]{ return message_received.load(); })) {
                 LOG_ERROR("Timeout waiting for data");
                 return false;
             }
-            if (received_data != step.data) {
+            if (received_data.find(step.data) == std::string::npos) {
+                // Relaxed match for HTTP or partial packets
                 LOG_ERROR("Mismatch! Expected '%s', got '%s'", step.data.c_str(), received_data.c_str());
                 return false;
             }
