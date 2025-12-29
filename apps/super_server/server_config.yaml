@@ -118,8 +118,11 @@ server:
     rate_limiter:
       enabled: true
       algorithm: "token_bucket"
-      requests_per_second: 10000
-      burst_size: 1000
+      requests_per_second: 50000
+      burst_size: 10000
+      per_ip_enabled: true
+      per_ip_requests_per_second: 20000
+      per_ip_burst_size: 5000
 
   observability:
     logging:
