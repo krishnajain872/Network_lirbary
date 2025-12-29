@@ -32,6 +32,10 @@ public:
         stream_handler_ = handler;
     }
 
+    virtual void SetRawHandler(IServer::RawHandler handler) {
+        raw_handler_ = handler;
+    }
+
     virtual void SetRateLimiter(std::shared_ptr<core::resilience::TokenBucket> limiter) {
         rate_limiter_ = limiter;
     }
@@ -40,6 +44,7 @@ public:
 
 protected:
     StreamHandler stream_handler_;
+    IServer::RawHandler raw_handler_;
     std::shared_ptr<core::resilience::TokenBucket> rate_limiter_;
 
     bool CheckRateLimit() {

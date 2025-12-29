@@ -23,6 +23,12 @@ public:
         }
     }
 
+    void Write(const std::string& data) override {
+        std::vector<char> encoded = GrpcCodec::Encode(data);
+        std::string s_encoded(encoded.begin(), encoded.end());
+        session_->SendStreamData(stream_id_, s_encoded, false);
+    }
+
     void Close() override {
         // Send end stream frame
         session_->SendStreamData(stream_id_, "", true);

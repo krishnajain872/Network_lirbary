@@ -15,7 +15,20 @@ add_executable(oms_server
 )
 target_link_libraries(oms_server PRIVATE network logger protos)
 
+# Super Server
+add_executable(super_server
+    super_server/main.cc
+)
+target_link_libraries(super_server PRIVATE network logger protos)
+
+# Super Client
+add_executable(super_client
+    super_client/main.cc
+    super_client/scenario_engine.cc
+)
+target_link_libraries(super_client PRIVATE network logger protos)
+
 # Install
-install(TARGETS oms_client oms_server
+install(TARGETS oms_client oms_server super_server super_client
     RUNTIME DESTINATION bin
 )

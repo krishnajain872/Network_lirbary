@@ -47,6 +47,29 @@ public:
         conn_->Send(std::string(out.begin(), out.end()));
     }
 
+    void Write(const std::string& data) override {
+        // Assume text for generic string write
+        std::vector<char> out;
+        out.push_back(0x81); // Fin | Text
+
+        size_t len = data.size();
+        if (len < 126) {
+            out.push_back(static_cast<uint8_t>(len));
+        } else if (len < 65536) {
+            out.push_back(126);
+            out.push_back((len >> 8) & 0xFF);
+            out.push_back(len & 0xFF);
+        } else {
+            out.push_back(127);
+            for (int i = 7; i >= 0; --i) {
+                out.push_back((len >> ((7 - i) * 8)) & 0xFF);
+            }
+        }
+
+        out.insert(out.end(), data.begin(), data.end());
+        conn_->Send(std::string(out.begin(), out.end()));
+    }
+
     void Close() override { conn_->ForceClose(); }
 
 private:

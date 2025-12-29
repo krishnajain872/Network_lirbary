@@ -116,6 +116,15 @@ struct SslConfig {
     std::vector<std::string> alpn_protocols;
 };
 
+struct ProtocolConfig {
+    std::string name;
+    std::string type; // tcp, udp, http, grpc, etc.
+    std::string mode = "proto"; // "proto" (default) or "raw"
+    int port = 0;
+    bool enabled = true;
+    SslConfig ssl; // Optional per-protocol SSL
+};
+
 // ==========================================
 // Performance Configuration
 // ==========================================
@@ -271,7 +280,8 @@ struct ServerConfig {
     std::string environment = "production";
     
     NetworkConfig network;
-    ProtocolsConfig protocols;
+    ProtocolsConfig protocols; // Legacy static structure
+    std::vector<ProtocolConfig> protocol_list; // New dynamic structure
     SslConfig ssl;
     PerformanceConfig performance;
     ResilienceConfig resilience;

@@ -1,0 +1,27 @@
+server:
+  name: "SuperServer"
+  environment: "dev"
+
+  protocols:
+    - name: "RawTCP"
+      type: "tcp"
+      mode: "raw"
+      port: 9001
+      enabled: true
+
+    - name: "ProtoTCP"
+      type: "tcp"
+      mode: "proto"
+      port: 9002
+      enabled: true
+
+    - name: "RawUDP"
+      type: "udp"
+      mode: "raw"
+      port: 9003
+      enabled: true
+
+  observability:
+    logging:
+      level: "info"
+      output: "stdout"
