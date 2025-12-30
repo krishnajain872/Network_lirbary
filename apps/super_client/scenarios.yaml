@@ -53,6 +53,18 @@ scenarios:
         data: "RPC Request"
       - action: disconnect
 
+  - name: "RPC Call"
+    type: "rpc"
+    mode: "proto"
+    target: "127.0.0.1:9008"
+    steps:
+      - action: connect
+      - action: send
+        data: "RPC Data"
+      - action: expect
+        data: "RPC Data"
+      - action: disconnect
+
   - name: "QUIC Stream"
     type: "quic"
     mode: "proto"
