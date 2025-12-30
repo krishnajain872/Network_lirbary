@@ -1,17 +1,18 @@
 # Super-Server and Super-Client Architecture
 
-This document describes the architecture for the Unified Reference Server ("Super-Server") and Client ("Super-Client").
+This document describes the architecture for the Universal Reference Server ("Super-Server") and Client ("Super-Client").
 
 ## 1. Overview
 The Super-Server and Super-Client are designed to demonstrate the full capabilities of the `lib_network` library, particularly:
-*   **Multi-Protocol Support:** Running TCP, UDP, HTTP, gRPC, WebSocket simultaneously.
+*   **Multi-Protocol Support:** Running TCP, UDP, HTTP, gRPC, RPC, WebSocket, and QUIC simultaneously.
 *   **Raw vs. Proto Mode:** Handling raw byte streams vs. structured `StreamEnvelope` Protobuf messages.
+*   **Secure vs. Non-Secure:** TLS/SSL support for TCP-based protocols.
 *   **Configuration-Driven:** Fully dynamic behavior based on YAML configuration.
 
 ## 2. Super-Server Architecture
 
 ### 2.1 Unified Server Model
-The core `Server` class in `lib_network` has been enhanced to support a list of protocols.
+The core `Server` class in `lib_network` supports a list of protocols defined in `server_config.yaml`.
 
 ```mermaid
 classDiagram
@@ -23,6 +24,7 @@ classDiagram
         +string type
         +string mode
         +int port
+        +SslConfig ssl
     }
     class Server {
         +Init()
@@ -43,38 +45,16 @@ classDiagram
     Server ..> ProtocolHandler : Creates
 ```
 
-### 2.2 Data Flow (Raw vs Proto)
-The system now supports two modes of operation for data handling:
-
-1.  **Proto Mode (Default):**
-    *   Data is framed (e.g., 4-byte length prefix for TCP).
-    *   Payload is deserialized into `StreamEnvelope`.
-    *   Passed to `StreamHandler`.
-
-2.  **Raw Mode:**
-    *   Raw bytes are passed directly to `RawHandler`.
-    *   Useful for implementing custom protocols or testing low-level connectivity.
-
-```mermaid
-sequenceDiagram
-    participant Connection
-    participant TcpHandler
-    participant StreamHandler
-    participant RawHandler
-
-    Connection->>TcpHandler: OnMessage(buffer)
-    alt Raw Mode
-        TcpHandler->>RawHandler: operator()(vector<char>)
-    else Proto Mode
-        TcpHandler->>TcpHandler: Parse Length & Envelope
-        TcpHandler->>StreamHandler: operator()(StreamEnvelope)
-    end
-```
+### 2.2 Protocols
+*   **TCP/UDP:** Basic transport with Raw (echo) or Proto (StreamEnvelope) handlers.
+*   **HTTP/WebSocket:** Standard handlers (Basic 1.1 / WS upgrade).
+*   **gRPC/RPC:** Advanced handlers using HTTP/2 framing (gRPC) or length-prefixed framing (RPC).
+*   **QUIC:** Experimental UDP-based handler.
 
 ## 3. Super-Client Architecture
 
 ### 3.1 Scenario Engine
-The Super-Client uses a scenario-based approach to validation.
+The Super-Client uses a scenario-based approach to validation (`scenarios.yaml`).
 
 ```yaml
 scenarios:
@@ -91,13 +71,18 @@ scenarios:
 ```
 
 ### 3.2 Unified Client
-The `Client` class wraps `IClientProtocol` strategies but also allows direct raw access.
+The `Client` class dynamically selects `SOCK_STREAM` (TCP) or `SOCK_DGRAM` (UDP/QUIC) and initializes the appropriate `ClientProtocol` strategy (Http, Grpc, Tcp, etc.).
 
-*   **Connect:** Establishes connection using the specified protocol type.
-*   **Send:** Sends either `std::string` (Raw) or `StreamEnvelope` (Proto).
-*   **Receive:** Dispatches to `RawMessageHandler` or `MessageHandler`.
+## 4. Test Suite & Audit
+The `scripts/audit/` directory contains tools for automated verification:
+*   **Unit Tests:** CTest.
+*   **Integration Tests:** Super-Client scenarios.
+*   **Load Tests:** Concurrent client benchmark (`run_load_test.py`).
+*   **Reporting:** Generates `audit_report.md`.
 
-## 4. Directory Structure
+## 5. Directory Structure
 *   `apps/super_server/`: Server implementation and config.
 *   `apps/super_client/`: Client implementation and scenarios.
-*   `lib_network/`: Core library (updated with Raw/Multi-Protocol support).
+*   `lib_network/`: Core library.
+*   `scripts/audit/`: Audit tools.
+*   `scripts/benchmark/`: Load testing tools.
