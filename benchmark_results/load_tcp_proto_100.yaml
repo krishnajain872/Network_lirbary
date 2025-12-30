@@ -1,0 +1,16 @@
+scenarios:
+- mode: proto
+  name: Load tcp_proto
+  secure: false
+  steps:
+  - action: connect
+  - action: loop
+    count: 100
+    steps:
+    - action: send
+      data: LoadData1234567890
+    - action: expect
+      data: LoadData1234567890
+  - action: disconnect
+  target: 127.0.0.1:9002
+  type: tcp

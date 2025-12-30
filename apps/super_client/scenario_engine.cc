@@ -22,12 +22,31 @@ std::vector<Scenario> ScenarioEngine::Parse(const std::string& filepath) {
             s.target = node["target"].as<std::string>();
             if (node["secure"]) s.secure = node["secure"].as<bool>();
 
-            for (const auto& step_node : node["steps"]) {
-                Step step;
-                step.action = step_node["action"].as<std::string>();
-                if (step_node["data"]) step.data = step_node["data"].as<std::string>();
-                s.steps.push_back(step);
-            }
+            auto parse_steps = [](const YAML::Node& steps_node) -> std::vector<Step> {
+                std::vector<Step> steps;
+                if (!steps_node) return steps;
+                for (const auto& step_node : steps_node) {
+                    Step step;
+                    step.action = step_node["action"].as<std::string>();
+                    if (step_node["data"]) step.data = step_node["data"].as<std::string>();
+                    if (step_node["count"]) step.count = step_node["count"].as<int>();
+                    if (step_node["steps"]) {
+                        // Recursion not fully supported in lambda without auto in older C++, but std::function helps
+                        // Simplified: Only one level of loop supported for now as per plan
+                        // Actually, we can just parse sub-steps iteratively
+                        for (const auto& sub : step_node["steps"]) {
+                            Step sub_step;
+                            sub_step.action = sub["action"].as<std::string>();
+                            if (sub["data"]) sub_step.data = sub["data"].as<std::string>();
+                            step.sub_steps.push_back(sub_step);
+                        }
+                    }
+                    steps.push_back(step);
+                }
+                return steps;
+            };
+
+            s.steps = parse_steps(node["steps"]);
             scenarios.push_back(s);
         }
     }
@@ -90,6 +109,10 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
     std::mutex mtx;
     std::condition_variable cv;
 
+    // Metrics
+    int messages_sent = 0;
+    auto start_time = std::chrono::steady_clock::now();
+
     // Register handlers
     if (scenario.mode == "raw") {
         client->RegisterRawMessageHandler([&](const std::string& data) {
@@ -97,7 +120,7 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
             received_data = data;
             message_received = true;
             cv.notify_one();
-            LOG_INFO("Client Received Raw: %s", data.c_str());
+            // LOG_INFO("Client Received Raw: %s", data.c_str()); // Verbose logging off for load
         });
     } else {
         client->RegisterMessageHandler([&](const StreamEnvelope& env) {
@@ -105,46 +128,88 @@ bool ScenarioEngine::Execute(const Scenario& scenario) {
              if (env.has_payload()) received_data = env.payload().data();
              message_received = true;
              cv.notify_one();
-             LOG_INFO("Client Received Proto Payload: %s", received_data.c_str());
+             // LOG_INFO("Client Received Proto Payload: %s", received_data.c_str()); // Verbose logging off
         });
     }
 
-    for (const auto& step : scenario.steps) {
-        if (step.action == "connect") {
-            LOG_INFO("Action: Connect to %s", scenario.target.c_str());
-            if (!client->Connect()) {
-                LOG_ERROR("Failed to connect");
-                return false;
+    auto execute_steps = [&](const std::vector<Step>& steps) -> bool {
+        for (const auto& step : steps) {
+            if (step.action == "connect") {
+                LOG_INFO("Action: Connect to %s", scenario.target.c_str());
+                if (!client->Connect()) {
+                    LOG_ERROR("Failed to connect");
+                    return false;
+                }
+            } else if (step.action == "send") {
+                // LOG_INFO("Action: Send '%s'", step.data.c_str());
+                if (scenario.mode == "raw") {
+                    client->Send(step.data);
+                } else {
+                    StreamEnvelope env;
+                    env.mutable_header()->set_message_type("test_msg");
+                    env.mutable_payload()->set_data(step.data);
+                    client->Send(env);
+                }
+                messages_sent++;
+            } else if (step.action == "expect") {
+                // LOG_INFO("Action: Expect '%s'", step.data.c_str());
+                std::unique_lock<std::mutex> lock(mtx);
+                if (!cv.wait_for(lock, std::chrono::seconds(5), [&]{ return message_received.load(); })) {
+                    LOG_ERROR("Timeout waiting for data");
+                    return false;
+                }
+                if (received_data.find(step.data) == std::string::npos) {
+                    LOG_ERROR("Mismatch! Expected '%s', got '%s'", step.data.c_str(), received_data.c_str());
+                    return false;
+                }
+                message_received = false; // Reset
+                // LOG_INFO("Match confirmed.");
+            } else if (step.action == "disconnect") {
+                 LOG_INFO("Action: Disconnect");
+                 client->Disconnect();
+            } else if (step.action == "loop") {
+                LOG_INFO("Action: Loop %d times", step.count);
+                for (int i = 0; i < step.count; ++i) {
+                    // Execute sub-steps using recursive call?
+                    // Lambda recursion requires capturing itself, which is tricky.
+                    // Just unroll logic here since we only support 1 level of loop for now
+                    for (const auto& sub : step.sub_steps) {
+                        if (sub.action == "send") {
+                            if (scenario.mode == "raw") {
+                                client->Send(sub.data);
+                            } else {
+                                StreamEnvelope env;
+                                env.mutable_header()->set_message_type("test_msg");
+                                env.mutable_payload()->set_data(sub.data);
+                                client->Send(env);
+                            }
+                            messages_sent++;
+                        } else if (sub.action == "expect") {
+                            std::unique_lock<std::mutex> lock(mtx);
+                            if (!cv.wait_for(lock, std::chrono::seconds(5), [&]{ return message_received.load(); })) {
+                                LOG_ERROR("Timeout loop");
+                                return false;
+                            }
+                            if (received_data.find(sub.data) == std::string::npos) {
+                                LOG_ERROR("Mismatch loop");
+                                return false;
+                            }
+                            message_received = false;
+                        }
+                    }
+                }
             }
-        } else if (step.action == "send") {
-            LOG_INFO("Action: Send '%s'", step.data.c_str());
-            if (scenario.mode == "raw") {
-                client->Send(step.data);
-            } else {
-                StreamEnvelope env;
-                env.mutable_header()->set_message_type("test_msg");
-                env.mutable_payload()->set_data(step.data);
-                client->Send(env);
-            }
-        } else if (step.action == "expect") {
-            LOG_INFO("Action: Expect '%s'", step.data.c_str());
-            std::unique_lock<std::mutex> lock(mtx);
-            if (!cv.wait_for(lock, std::chrono::seconds(5), [&]{ return message_received.load(); })) {
-                LOG_ERROR("Timeout waiting for data");
-                return false;
-            }
-            if (received_data.find(step.data) == std::string::npos) {
-                // Relaxed match for HTTP or partial packets
-                LOG_ERROR("Mismatch! Expected '%s', got '%s'", step.data.c_str(), received_data.c_str());
-                return false;
-            }
-            message_received = false; // Reset
-            LOG_INFO("Match confirmed.");
-        } else if (step.action == "disconnect") {
-             LOG_INFO("Action: Disconnect");
-             client->Disconnect();
         }
+        return true;
+    };
+
+    bool res = execute_steps(scenario.steps);
+
+    auto end_time = std::chrono::steady_clock::now();
+    double seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() / 1000.0;
+    if (messages_sent > 0) {
+        LOG_INFO("Performance: %d messages in %.2fs (%.2f msg/sec)", messages_sent, seconds, messages_sent/seconds);
     }
 
-    return true;
+    return res;
 }

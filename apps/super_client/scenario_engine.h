@@ -9,8 +9,10 @@
 #include <functional>
 
 struct Step {
-    std::string action; // connect, send, expect, disconnect
+    std::string action; // connect, send, expect, disconnect, loop
     std::string data;
+    int count = 0; // For loop
+    std::vector<Step> sub_steps; // For loop
 };
 
 struct Scenario {

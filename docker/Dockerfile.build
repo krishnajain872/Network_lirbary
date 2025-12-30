@@ -104,6 +104,12 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=source-builder /usr/local /usr/local
 
+# Copy configuration files and scripts for runtime
+COPY --from=source-builder /src/apps/super_server/server_config.yaml /app/server_config.yaml
+COPY --from=source-builder /src/apps/super_client/scenarios.yaml /app/scenarios.yaml
+COPY --from=source-builder /src/scripts/audit /app/scripts/audit
+COPY --from=source-builder /src/scripts/benchmark /app/scripts/benchmark
+
 RUN ldconfig
 
 RUN useradd -m -u 1000 -s /bin/bash networklib
@@ -111,10 +117,11 @@ USER networklib
 
 WORKDIR /app
 
-# SAFE DEFAULT:
-# - No assumption about executable name
-# - Prevents "no such file or directory" crash
-CMD ["/bin/bash"]
+# Expose server ports
+EXPOSE 9001-9014
+
+# Default entrypoint to SuperServer
+CMD ["super_server", "server_config.yaml"]
 
 
 # =====================================================
