@@ -76,6 +76,8 @@ void TcpHandler::OnMessage(const core::Connection::Ptr& conn) {
         std::copy(header, header + 4, reinterpret_cast<char*>(&length));
         length = ntohl(length);
 
+        // LOG_INFO("TcpHandler: Reading message of length %u", length);
+
         if (length > 100 * 1024 * 1024) { // Sanity check
              LOG_ERROR("Invalid message length %u. Closing connection.", length);
              conn->ForceClose(); // Force close to prevent desync
