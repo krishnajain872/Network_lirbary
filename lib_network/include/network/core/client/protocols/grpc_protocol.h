@@ -4,9 +4,11 @@
 #include "network/core/client/client_protocol.h"
 #include "stream_envelope.pb.h"
 #include "network/protocols/grpc/grpc_codec.h"
+#include "network/protocols/http2/hpack.h"
 #include "logger/logging.h"
 #include <vector>
 #include <cstring>
+#include <map>
 
 namespace networklib {
 namespace core {
@@ -21,7 +23,6 @@ public:
         conn->Send(preface);
 
         // 2. Send Initial SETTINGS Frame (Empty)
-        // Length: 0, Type: 4 (SETTINGS), Flags: 0, Stream: 0
         uint8_t settings[9] = {0, 0, 0, 4, 0, 0, 0, 0, 0};
         conn->Send(reinterpret_cast<char*>(settings), 9);
 
@@ -29,34 +30,47 @@ public:
     }
 
     void Send(const std::shared_ptr<Connection>& conn, const StreamEnvelope& envelope) override {
-        // gRPC over HTTP/2 requires:
-        // 1. HEADERS frame (Stream ID 1, End Headers)
-        // 2. DATA frame (Stream ID 1, End Stream) - containing gRPC Length-Prefixed Message
+        // 1. Construct Headers via HPACK
+        std::map<std::string, std::string> headers;
+        headers[":method"] = "POST";
+        headers[":scheme"] = "http";
+        // Default path if not specified
+        std::string path = "/test.Service/Method";
+        if (envelope.has_header() && !envelope.header().message_type().empty()) {
+             path = envelope.header().message_type(); // Use message_type as path
+        }
+        headers[":path"] = path;
+        headers["content-type"] = "application/grpc";
+        headers["te"] = "trailers";
 
-        // Construct basic HEADERS frame block (Mock HPACK or Empty)
-        // Since our Server GrpcHandler MOCKS the path if missing, sending empty headers might work
-        // if the FrameParser accepts it.
-        // Length 0 HEADERS frame means empty header list.
+        std::vector<uint8_t> hpack_block = protocols::http2::HpackEncoder::Encode(headers);
 
-        // Frame Header: Length(3), Type(1), Flags(1), Stream(4)
-        // Type 1 = HEADERS
-        // Flags 0x4 = END_HEADERS
-        // Stream 1
-        uint8_t headers[9] = {0, 0, 0, 1, 0x4, 0, 0, 0, 1};
-        conn->Send(reinterpret_cast<char*>(headers), 9);
+        // 2. Send HEADERS Frame
+        uint32_t len = hpack_block.size();
+        uint8_t frame_header[9];
+        frame_header[0] = (len >> 16) & 0xFF;
+        frame_header[1] = (len >> 8) & 0xFF;
+        frame_header[2] = len & 0xFF;
+        frame_header[3] = 1; // HEADERS
+        frame_header[4] = 0x4; // END_HEADERS
+        frame_header[5] = 0;
+        frame_header[6] = 0;
+        frame_header[7] = 0;
+        frame_header[8] = 1; // Stream 1
 
-        // DATA Frame
+        conn->Send(reinterpret_cast<char*>(frame_header), 9);
+        conn->Send(std::string(hpack_block.begin(), hpack_block.end()));
+
+        // 3. Send DATA Frame
         std::vector<char> grpc_bytes = protocols::grpc::GrpcCodec::Encode(envelope.SerializeAsString());
-        uint32_t len = grpc_bytes.size();
+        len = grpc_bytes.size();
 
-        // Type 0 = DATA
-        // Flags 0x1 = END_STREAM (Unary call assumption)
         uint8_t data_header[9];
         data_header[0] = (len >> 16) & 0xFF;
         data_header[1] = (len >> 8) & 0xFF;
         data_header[2] = len & 0xFF;
         data_header[3] = 0; // DATA
-        data_header[4] = 0x1; // END_STREAM
+        data_header[4] = 0x1; // END_STREAM (Unary)
         data_header[5] = 0;
         data_header[6] = 0;
         data_header[7] = 0;
