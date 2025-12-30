@@ -3,6 +3,9 @@ build/
 .cache/
 *.log
 *.tmp
+audit_report.json
+audit_report.md
+benchmark_results/
 node_modules/
 .next/
 dist/

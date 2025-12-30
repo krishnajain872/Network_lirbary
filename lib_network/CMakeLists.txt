@@ -5,6 +5,8 @@
 file(GLOB_RECURSE NETWORK_SOURCES
     ${PROJECT_SOURCE_DIR}/lib_network/src/*.cc
 )
+# Ensure hpack.cc is picked up
+# ${PROJECT_SOURCE_DIR}/lib_network/src/protocols/http2/hpack.cc
 
 add_library(network SHARED
     ${NETWORK_SOURCES}
