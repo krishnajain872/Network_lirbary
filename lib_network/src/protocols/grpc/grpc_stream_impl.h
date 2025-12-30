@@ -27,12 +27,24 @@ public:
         }
     }
 
-    void WriteHeaders(int /*status*/) override {
+    void WriteHeaders(int status) override {
         // Send HTTP/2 HEADERS frame (200 OK, application/grpc)
+        if (session_ && stream_) {
+            std::map<std::string, std::string> headers;
+            headers[":status"] = std::to_string(status);
+            headers["content-type"] = "application/grpc";
+            session_->SendHeaders(stream_->Id(), headers, false);
+        }
     }
 
-    void Finish(int /*status*/) override {
+    void Finish(int status) override {
         // Send Trailers (grpc-status) + End Stream
+        if (session_ && stream_) {
+            std::map<std::string, std::string> trailers;
+            trailers["grpc-status"] = std::to_string(status);
+            if (status != 0) trailers["grpc-message"] = "Error"; // Simplified
+            session_->SendHeaders(stream_->Id(), trailers, true);
+        }
     }
 
     void SetOnMessage(std::function<void(const std::string&)> cb) override {

@@ -1,4 +1,5 @@
 #include "network/protocols/http2/session.h"
+#include "network/protocols/http2/hpack.h"
 #include <iostream>
 #include <cstring>
 
@@ -85,6 +86,28 @@ void Session::SendStreamData(uint32_t stream_id, const std::string& data, bool e
     connection_->Send(header.data(), 9);
     if (!data.empty()) {
         connection_->Send(data);
+    }
+}
+
+void Session::SendHeaders(uint32_t stream_id, const std::map<std::string, std::string>& headers, bool end_stream) {
+    std::vector<uint8_t> hpack_block = HpackEncoder::Encode(headers);
+    uint32_t length = hpack_block.size();
+    uint8_t flags = end_stream ? 0x05 : 0x04; // 0x04 = END_HEADERS, 0x01 = END_STREAM
+
+    std::vector<char> header(9);
+    header[0] = (length >> 16) & 0xFF;
+    header[1] = (length >> 8) & 0xFF;
+    header[2] = length & 0xFF;
+    header[3] = 0x01; // HEADERS
+    header[4] = flags;
+    header[5] = (stream_id >> 24) & 0x7F;
+    header[6] = (stream_id >> 16) & 0xFF;
+    header[7] = (stream_id >> 8) & 0xFF;
+    header[8] = stream_id & 0xFF;
+
+    connection_->Send(header.data(), 9);
+    if (length > 0) {
+        connection_->Send(std::string(hpack_block.begin(), hpack_block.end()));
     }
 }
 

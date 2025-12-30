@@ -30,6 +30,11 @@ public:
      */
     void SendStreamData(uint32_t stream_id, const std::string& data, bool end_stream = false);
 
+    /**
+     * @brief Sends headers on a specific stream (wraps in HEADERS frame with HPACK).
+     */
+    void SendHeaders(uint32_t stream_id, const std::map<std::string, std::string>& headers, bool end_stream = false);
+
 private:
     void HandleFrame(const Frame& frame);
 
